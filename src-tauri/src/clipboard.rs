@@ -46,6 +46,15 @@ impl ClipboardManager for ClipboardHistory {
         let mut existing_item_idx: Option<usize> = None;
         let mut history_lock = self.lock().expect("Failed to lock clipboard history");
 
+        // This handles two different cases:
+        // 1. The item is already in the history
+        // 2. The item is not in the history
+        // It's probably better to split this into two functions
+        // `add_text` and `move_to_top`.
+        // `add_text` should `move_to_top` if the item is already in the history,
+        // but having a move_to_top function is better for handling pastes
+        // since we know that the item is in the history already, and may not want
+        // to depend on `add_text` and `add_image` implementations for everything.
         for (idx, item) in history_lock.iter().enumerate() {
             if item.hash == new_item.hash {
                 existing_item_idx = Some(idx);
