@@ -1,4 +1,4 @@
-use tauri::window::{Color, Effect, EffectState, EffectsBuilder};
+use tauri::window::{Effect, EffectState, EffectsBuilder};
 use tauri::{WebviewUrl, WebviewWindow, WebviewWindowBuilder, Window, WindowEvent};
 
 pub struct Settings {
@@ -14,19 +14,18 @@ pub fn create(app: &tauri::AppHandle, settings: Settings) -> Result<WebviewWindo
         .inner_size(settings.width, settings.height)
         .decorations(settings.decorations)
         .transparent(settings.transparent)
-        .background_color(Color(0, 0, 0, 0))
         .always_on_top(true)
+        .visible(false)
         .visible_on_all_workspaces(true)
+        .shadow(true)
         .effects(
             EffectsBuilder::new()
-                .effect(Effect::HudWindow)
+                .effect(Effect::Menu)
                 .state(EffectState::Active)
                 .radius(settings.radius)
                 .build(),
         )
         .build()?;
-
-    let _ = window.hide();
 
     Ok(window)
 }

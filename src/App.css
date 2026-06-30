@@ -24,7 +24,6 @@ body {
     padding: 0.4rem;
     height: 100vh;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 12px;
 }
 
@@ -52,7 +51,8 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.clipboard__item {
+.clipboard__item,
+.clipboard__menu__item {
     display: block;
     padding: .1rem .4rem;
     margin: .4rem 0;
@@ -65,12 +65,14 @@ body {
     border-radius: .8rem;
 }
 
-.clipboard__item > span {
+.clipboard__item > span,
+.clipboard__menu__item > span {
     font-size: .8rem;
 }
 
-.clipboard__item:hover {
-    background-color: blue;
+.clipboard__item:hover,
+.clipboard__menu__item:hover {
+    background-color: #007AFF;
 }
 
 .clipboard__item:not(:nth-child(1)) {

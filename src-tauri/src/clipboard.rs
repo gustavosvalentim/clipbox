@@ -70,10 +70,7 @@ impl ClipboardManager for InMemoryClipboardHistory {
 
         let hash = self.hash(&text);
 
-        self.add_item(ClipboardItem {
-            text,
-            hash,
-        });
+        self.add_item(ClipboardItem { text, hash });
     }
 
     fn clear(&self) -> Result<(), ClipboardError> {
@@ -128,17 +125,14 @@ pub struct ClipboardItem {
 
 pub struct ClipboardEventsListener<T>
 where
-    T: ClipboardManager
+    T: ClipboardManager,
 {
     history: T,
     handler: Arc<tauri::AppHandle>,
 }
 
 impl<T: ClipboardManager> ClipboardEventsListener<T> {
-    pub fn new(
-        app_handler: tauri::AppHandle,
-        history: T,
-    ) -> ClipboardEventsListener<T> {
+    pub fn new(app_handler: tauri::AppHandle, history: T) -> ClipboardEventsListener<T> {
         Self {
             history,
             handler: Arc::new(app_handler),

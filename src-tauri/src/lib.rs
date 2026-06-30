@@ -5,10 +5,10 @@ mod shortcuts;
 mod tray;
 mod window;
 
-use clipboard::{InMemoryClipboardHistory, ClipboardManager};
+use clipboard::{ClipboardManager, InMemoryClipboardHistory};
 use commands::{clear_clipboard_items, list_clipboard_items, paste_from_selection};
-use window::{window_events_handler};
 use shortcuts::register_shortcuts;
+use window::window_events_handler;
 
 use std::sync::{Arc, Mutex};
 

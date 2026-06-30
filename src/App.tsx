@@ -58,23 +58,23 @@ function App() {
 
       <div className="clipboard">
         <div className="clipboard__history">
-          {clipboard.map((item) => (
+          {clipboard.map((item, idx) => (
             <div
               className="clipboard__item"
-              key={item.text}
+              key={idx}
               onClick={() => pasteFromSelection(item.text)}
             >
-              <span>{item.text}</span>
+              <span>{idx}. {item.text}</span>
             </div>
           ))}
         </div>
 
         <div className="clipboard__menu">
-          <div className="clipboard__item" onClick={clearHistory}>
+          <div className="clipboard__menu__item" onClick={clearHistory}>
             <span>Clear</span>
           </div>
         
-          <div className="clipboard__item" onClick={hideWindow}>
+          <div className="clipboard__menu__item" onClick={hideWindow}>
             <span>Quit</span>
           </div>
         </div>
