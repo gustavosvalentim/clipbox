@@ -122,11 +122,17 @@ impl ClipboardEventsListener {
 
 impl ClipboardHandler for ClipboardEventsListener {
     fn on_clipboard_change(&mut self) -> CallbackResult {
-        let text = self
-            .handler
-            .clipboard()
-            .read_text()
-            .expect("Failed to get clipboard text");
+        let text = self.handler.clipboard().read_text();
+
+        // TODO: this is probably an image and we should get it using
+        // `AppHandle.clipboard().read_image()`.
+        // Need to figure out how to handle this in the UI and backend
+        if text.is_err() {
+            return CallbackResult::Next;
+        }
+
+        // I know this sucks, but it's just until I add image support
+        let text = text.unwrap();
 
         println!("Clipboard changed: {text}");
 

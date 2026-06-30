@@ -15,6 +15,8 @@ pub fn create(app: &tauri::AppHandle, settings: Settings) -> Result<WebviewWindo
         .decorations(settings.decorations)
         .transparent(settings.transparent)
         .background_color(Color(0, 0, 0, 0))
+        .always_on_top(true)
+        .visible_on_all_workspaces(true)
         .effects(
             EffectsBuilder::new()
                 .effect(Effect::HudWindow)
