@@ -144,7 +144,8 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
     fn on_clipboard_change(&mut self) -> CallbackResult {
         let text = self.handler.clipboard().read_text();
 
-        // TODO: this is probably an image and we should get it using
+        // TODO: add image support
+        // this is probably an image and we should get it using
         // `AppHandle.clipboard().read_image()`.
         // Need to figure out how to handle this in the UI and backend
         if text.is_err() {
@@ -178,7 +179,7 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
     }
 }
 
-pub fn change_listener<T: ClipboardManager>(
+pub fn clipboard_events_listener<T: ClipboardManager>(
     app_handler: tauri::AppHandle,
     history: T,
 ) -> Master<ClipboardEventsListener<T>> {

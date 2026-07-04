@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 
 type ClipboardItem = {
@@ -15,17 +14,19 @@ function App() {
 
   const quitClipbox = () => invoke("quit_clipbox");
 
-  const getClipboardHistory = () => {
-    invoke<ClipboardItem[]>("list_clipboard_items").then((history: Clipboard) => {
-      console.log(history);
-      setClipboard(history);
-    });
+  const fetchClipboardHistory = async () => {
+    try {
+      let clipboard = await invoke<ClipboardItem[]>("list_clipboard_items");
+      setClipboard(clipboard);
+    } catch (error) {
+      console.error("Failed to get clipboard history", error);
+    }
   };
 
   const clearHistory = async () => {
     try {
       await invoke("clear_clipboard_items");
-      getClipboardHistory();
+      fetchClipboardHistory();
     } catch (error) {
       console.error("Failed to clear clipboard history", error);
     }
@@ -34,14 +35,14 @@ function App() {
   const pasteFromSelection = async (text: string) => {
     try {
       await invoke("paste_from_selection", { text });
-      getClipboardHistory();
+      fetchClipboardHistory();
     } catch (error) {
       console.error("Failed to paste from selection", error);
     }
   };
 
   useEffect(() => {
-    const unlisten = listen<string>("clipboard-changed", getClipboardHistory);
+    const unlisten = listen<string>("clipboard-changed", fetchClipboardHistory);
 
     return () => {
       unlisten.then((unlisten) => unlisten());

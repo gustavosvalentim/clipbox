@@ -24,12 +24,13 @@ fn show_on_cursor_handler(app: &tauri::AppHandle) {
 
         // Physical position causes the position to be off on HiDPI screens
         // TODO: clamp the position to the screen size
-        let new_pos = LogicalPosition {
+        // TODO: handle multi monitor setups
+        let cursor_position = LogicalPosition {
             x: f64::from(mouse_x),
             y: f64::from(mouse_y),
         };
 
-        match window.set_position(Position::Logical(new_pos)) {
+        match window.set_position(Position::Logical(cursor_position)) {
             Ok(_) => {}
             Err(e) => {
                 println!("Failed to position window: {e}");

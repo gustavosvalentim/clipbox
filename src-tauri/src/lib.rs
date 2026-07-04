@@ -67,7 +67,7 @@ pub fn run() {
                 panic!("Failed to register shortcuts: {e}");
             }
 
-            let mut listener = clipboard::change_listener(app_handle, clipboard_history);
+            let mut listener = clipboard::clipboard_events_listener(app_handle, clipboard_history);
 
             tauri::async_runtime::spawn(async move {
                 listener.run().expect("Clipboard master shutdown");
