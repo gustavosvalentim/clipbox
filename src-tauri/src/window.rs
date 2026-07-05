@@ -1,4 +1,6 @@
-use tauri::{WebviewUrl, WebviewWindow, WebviewWindowBuilder, Window, WindowEvent};
+use tauri::{Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder, Window, WindowEvent};
+
+const MAIN_WINDOW_LABEL: &str = "main";
 
 pub struct Settings {
     pub width: f64,
@@ -25,15 +27,16 @@ pub fn create_clipbox_window(
     app: &tauri::AppHandle,
     settings: Settings,
 ) -> Result<WebviewWindow, WindowError> {
-    let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-        .inner_size(settings.width, settings.height)
-        .decorations(settings.decorations)
-        .transparent(settings.transparent)
-        .always_on_top(true)
-        .visible(false)
-        .visible_on_all_workspaces(true)
-        .shadow(false)
-        .build();
+    let window =
+        WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, WebviewUrl::default())
+            .inner_size(settings.width, settings.height)
+            .decorations(settings.decorations)
+            .transparent(settings.transparent)
+            .always_on_top(true)
+            .visible(false)
+            .visible_on_all_workspaces(true)
+            .shadow(false)
+            .build();
 
     let window = match window {
         Ok(window) => window,
@@ -43,6 +46,10 @@ pub fn create_clipbox_window(
     apply_window_effects(&window, settings.radius);
 
     Ok(window)
+}
+
+pub fn get_main_window(app: &tauri::AppHandle) -> Option<WebviewWindow> {
+    app.get_webview_window(MAIN_WINDOW_LABEL)
 }
 
 #[cfg(target_os = "macos")]

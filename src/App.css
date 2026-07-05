@@ -46,9 +46,9 @@ button {
   inset: 0;
   z-index: 0;
   border-radius: inherit;
-  background: rgba(18, 18, 20, 0.48);
-  backdrop-filter: blur(18px) saturate(1.25);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  background: rgba(18, 18, 20, 0.68);
+  backdrop-filter: blur(12px) saturate(1.25);
+  -webkit-backdrop-filter: blur(12px) saturate(1.25);
   transform: translateZ(0);
   will-change: backdrop-filter;
   pointer-events: none;
@@ -123,7 +123,8 @@ button {
 }
 
 .menu__item:hover,
-.menu__item:focus-visible {
+.menu__item:focus-visible,
+.menu__item.active {
   background: #0a84ff;
   color: #fff;
   outline: none;

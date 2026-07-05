@@ -3,8 +3,10 @@ use std::sync::{Arc, Mutex};
 use enigo::{Enigo, Mouse};
 use tauri::{LogicalPosition, Manager, Position};
 
+use crate::window::get_main_window;
+
 fn show_on_cursor_handler(app: &tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
+    if let Some(window) = get_main_window(app) {
         let enigo = app.state::<Arc<Mutex<Enigo>>>();
         let enigo = match enigo.lock() {
             Ok(enigo) => enigo,

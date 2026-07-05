@@ -6,7 +6,7 @@ mod tray;
 mod window;
 
 use clipboard::{ClipboardManager, InMemoryClipboardHistory};
-use commands::{clear_clipboard_items, list_clipboard_items, paste_from_selection, quit_clipbox};
+use commands::{clear_clipboard_items, list_clipboard_items, paste_from_selection, quit_clipbox, hide_clipbox};
 use shortcuts::register_shortcuts;
 use window::{create_clipbox_window, window_events_handler};
 
@@ -38,7 +38,8 @@ pub fn run() {
             list_clipboard_items,
             paste_from_selection,
             clear_clipboard_items,
-            quit_clipbox
+            quit_clipbox,
+            hide_clipbox,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
