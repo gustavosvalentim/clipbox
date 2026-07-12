@@ -42,14 +42,10 @@ Prerequisites:
 - Tauri development dependencies for macOS.
 
 <details>
-<summary>Setup with Bun and Cargo</summary>
+<summary>Setup</summary>
 
 ```sh
 bun install
-```
-
-```sh
-cargo fetch --manifest-path src-tauri/Cargo.toml
 ```
 
 </details>
@@ -57,10 +53,16 @@ cargo fetch --manifest-path src-tauri/Cargo.toml
 <details>
 <summary>Run the app locally</summary>
 
-Start the full Tauri app:
+Using Bun:
 
 ```sh
 bun run tauri dev
+```
+
+Using Cargo:
+
+```sh
+cargo tauri dev
 ```
 
 Run only the frontend dev server:
@@ -69,33 +71,29 @@ Run only the frontend dev server:
 bun run dev
 ```
 
-Check the Rust backend:
-
-```sh
-cargo check --manifest-path src-tauri/Cargo.toml
-```
-
 </details>
 
 <details>
 <summary>Generate release binaries</summary>
 
-Build the frontend assets:
-
-```sh
-bun run build
-```
-
-Build the Rust release target:
-
-```sh
-cargo build --release --manifest-path src-tauri/Cargo.toml
-```
-
-Generate the Tauri app bundle and installer artifacts:
+Using Bun:
 
 ```sh
 bun run tauri build
+```
+
+Using Cargo:
+
+```sh
+cargo tauri build
+```
+
+The generated app bundle and installer artifacts are written under `src-tauri/target/release/bundle/`.
+
+Build only the frontend assets:
+
+```sh
+bun run build
 ```
 
 </details>
@@ -103,7 +101,13 @@ bun run tauri build
 <details>
 <summary>Format the project</summary>
 
-Format the project:
+Format Rust code:
+
+```sh
+cargo fmt --manifest-path src-tauri/Cargo.toml
+```
+
+Format frontend code:
 
 ```sh
 bun run format
