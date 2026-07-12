@@ -36,7 +36,6 @@ button {
 	border-radius: 11px;
 	background: rgba(18, 18, 20, 0);
 	box-shadow: 0 9px 22px rgba(0, 0, 0, 0.36);
-	color: rgba(245, 245, 247, 0.9);
 	display: flex;
 	flex-direction: column;
 	isolation: isolate;
@@ -81,67 +80,11 @@ button {
 	flex-direction: column;
 }
 
-.menu__label {
-	height: 15px;
-	display: flex;
-	align-items: center;
-	color: rgba(235, 235, 245, 0.32);
-	font-size: 13px;
-	font-weight: 700;
-	letter-spacing: 0;
-	line-height: 1;
-	user-select: none;
-}
-
 .menu__history {
 	min-height: 0;
 	flex: 1;
 	margin-top: 4px;
-	overflow-y: auto;
+	overflow-y: scroll;
 	overflow-x: hidden;
 }
 
-.menu__history::-webkit-scrollbar {
-	display: none;
-}
-
-.menu__item {
-	width: 100%;
-	height: 24px;
-	padding: 0;
-	border: 0;
-	border-radius: 0.4rem;
-	background: transparent;
-	color: inherit;
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	align-items: center;
-	gap: 6px;
-	font-size: 12px;
-	font-weight: 600;
-	letter-spacing: 0;
-	line-height: 1;
-	text-align: left;
-	cursor: default;
-}
-
-.menu__item:hover,
-.menu__item:focus-visible,
-.menu__item.active {
-	background: #0a84ff;
-	color: #fff;
-	outline: none;
-}
-
-.menu__title {
-	min-width: 0;
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-}
-
-.menu__separator {
-	height: 1px;
-	margin: 4px 0;
-	background: rgba(235, 235, 245, 0.18);
-}
