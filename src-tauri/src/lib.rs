@@ -6,31 +6,38 @@ mod tray;
 mod window;
 
 use clipboard::{ClipboardManager, InMemoryClipboardHistory};
-use commands::{clear_clipboard_items, list_clipboard_items, paste_from_selection, quit_clipbox, hide_clipbox};
+use commands::{
+    clear_clipboard_items, delete_item, hide_clipbox, list_clipboard_items, paste_from_selection,
+    quit_clipbox,
+};
+use paste::PasteState;
 use shortcuts::register_shortcuts;
 use window::{create_clipbox_window, window_events_handler};
 
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use enigo::{Enigo, Settings};
 
-const WINDOW_WIDTH: f64 = 155.0;
-const WINDOW_HEIGHT: f64 = 224.0;
+const WINDOW_WIDTH: f64 = 250.0;
+const WINDOW_HEIGHT: f64 = 350.0;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let clipboard_history = InMemoryClipboardHistory::new_manager();
 
     let enigo = match Enigo::new(&Settings::default()) {
-        Ok(enigo) => Arc::new(Mutex::new(enigo)),
+        Ok(enigo) => Mutex::new(enigo),
         Err(e) => {
             panic!("Failed to create Enigo instance: {e}");
         }
     };
 
+    let paste_target = PasteState::new();
+
     tauri::Builder::default()
         .manage(clipboard_history.clone())
-        .manage(enigo.clone())
+        .manage(enigo)
+        .manage(paste_target)
         .on_window_event(window_events_handler)
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -40,6 +47,7 @@ pub fn run() {
             clear_clipboard_items,
             quit_clipbox,
             hide_clipbox,
+            delete_item,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -52,7 +60,6 @@ pub fn run() {
                 height: WINDOW_HEIGHT,
                 transparent: true,
                 decorations: false,
-                radius: 11.0,
             };
 
             if let Err(e) = create_clipbox_window(&app_handle, window_settings) {

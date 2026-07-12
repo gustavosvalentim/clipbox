@@ -1,3 +1,6 @@
+use std::sync::{Mutex, MutexGuard};
+
+use enigo::{Enigo, Direction, Key, Keyboard};
 use tauri::Manager;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -23,6 +26,8 @@ impl std::fmt::Display for PasteError {
 
 pub fn paste(app: tauri::AppHandle, text: String) -> Result<(), PasteError> {
     let history = app.state::<InMemoryClipboardHistory>();
+    let paste_target = app.state::<PasteState>();
+    let enigo = app.state::<Mutex<Enigo>>();
 
     if !history.exists(&text) {
         return Err(PasteError::ItemNotFound);
@@ -38,5 +43,134 @@ pub fn paste(app: tauri::AppHandle, text: String) -> Result<(), PasteError> {
         }
     }
 
+    if let Some(target) = paste_target.target() {
+        target.activate();
+    }
+
+    if let Ok(mut enigo) = enigo.lock() {
+        platform_paste(&mut enigo);
+    }
+
     Ok(())
+}
+
+fn platform_paste(enigo: &mut Enigo) {
+    #[cfg(target_os = "macos")]
+    let mod_key = Key::Meta;
+
+    #[cfg(not(target_os = "macos"))]
+    let mod_key = Key::Control;
+
+    let _ = enigo.key(mod_key, Direction::Press);
+    let _ = enigo.key(Key::Unicode('v'), Direction::Press);
+    let _ = enigo.key(mod_key, Direction::Release);
+}
+
+pub struct PasteState {
+    target: Mutex<PlatformPasteTarget>,
+}
+
+impl PasteState {
+    pub fn new() -> Self {
+        Self {
+            target: Mutex::new(PlatformPasteTarget::new().unwrap()),
+        }
+    }
+
+    pub fn target(&self) -> Option<MutexGuard<'_, PlatformPasteTarget>> {
+        self.target.lock().ok()
+    }
+}
+
+pub enum PlatformPasteTarget {
+    #[cfg(target_os = "macos")]
+    MacOS(macos::MacOSPasteTarget),
+    #[cfg(target_os = "windows")]
+    Windows,
+    #[cfg(target_os = "linux")]
+    Linux,
+}
+
+impl PlatformPasteTarget {
+    pub fn new() -> Option<Self> {
+        #[cfg(target_os = "macos")]
+        {
+            Some(PlatformPasteTarget::MacOS(macos::MacOSPasteTarget::new()))
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            Some(PlatformPasteTarget::Windows)
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            Some(PlatformPasteTarget::Linux)
+        }
+
+        #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+        {
+            None
+        }
+    }
+
+    pub fn get_current_target(&mut self) {
+        match self {
+            #[cfg(target_os = "macos")]
+            PlatformPasteTarget::MacOS(target) => target.get_current_target(),
+            #[cfg(target_os = "windows")]
+            PlatformPasteTarget::Windows => Some(PlatformPasteTarget::Windows),
+            #[cfg(target_os = "linux")]
+            PlatformPasteTarget::Linux => Some(PlatformPasteTarget::Linux),
+        }
+    }
+    
+    pub fn activate(&self) {
+        match self {
+            PlatformPasteTarget::MacOS(target) => target.activate(),
+            #[cfg(target_os = "windows")]
+            PlatformPasteTarget::Windows => {}
+            #[cfg(target_os = "linux")]
+            PlatformPasteTarget::Linux => {}
+        }
+    }
+}
+
+pub trait PasteTarget {
+    fn get_current_target(&mut self);
+    fn activate(&self);
+}
+
+#[cfg(target_os = "macos")]
+pub mod macos
+{
+    use objc2_app_kit::{NSWorkspace, NSRunningApplication, NSApplicationActivationOptions};
+
+    use super::PasteTarget;
+
+    pub struct MacOSPasteTarget {
+       app: i32,
+    }
+
+    impl MacOSPasteTarget {
+        pub fn new() -> Self {
+            MacOSPasteTarget {
+                app: 0,
+            }
+        }
+    }
+
+    impl PasteTarget for MacOSPasteTarget {
+        fn get_current_target(&mut self) {
+            let workspace = NSWorkspace::sharedWorkspace();
+            let app = workspace.frontmostApplication();
+
+            self.app = app.unwrap().processIdentifier();
+        }
+
+        fn activate(&self) {
+            let app = NSRunningApplication::runningApplicationWithProcessIdentifier(self.app);
+            app.unwrap().activateWithOptions(NSApplicationActivationOptions::empty());
+        }
+    }
 }

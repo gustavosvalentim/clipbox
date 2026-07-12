@@ -1,5 +1,7 @@
 use std::vec::Vec;
 
+use tauri_plugin_clipboard_manager::ClipboardExt;
+
 use crate::clipboard::{ClipboardItem, ClipboardManager, InMemoryClipboardHistory};
 use crate::paste;
 use crate::window::get_main_window;
@@ -42,7 +44,7 @@ pub fn quit_clipbox(app: tauri::AppHandle) {
     match get_main_window(&app) {
         Some(window) => {
             let _ = window.close();
-        },
+        }
         None => println!("Failed to get main window"),
     };
 }
@@ -52,7 +54,28 @@ pub fn hide_clipbox(app: tauri::AppHandle) {
     match get_main_window(&app) {
         Some(window) => {
             let _ = window.hide();
-        },
+        }
         None => println!("Failed to get main window"),
     };
 }
+
+#[tauri::command]
+pub fn delete_item(app: tauri::AppHandle, history: tauri::State<'_, InMemoryClipboardHistory>, text: String) {
+    // TODO: this is pretty slow when we delete the first item
+    // the issue is that we need to wait for the frontend to receive
+    // the "clipboard-changed" event, which takes a little while.
+    // Fixing this is not trivial.
+    let Ok(item_idx) = history.delete(&text) else {
+        println!("Failed to delete item from clipboard history");
+        return;
+    };
+
+    let item_idx = item_idx as u32;
+
+    if item_idx == 0 {
+        if let Ok(item) = history.first() {
+            app.clipboard().write_text(item.text).unwrap();
+        }
+    }
+}
+

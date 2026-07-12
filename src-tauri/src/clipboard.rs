@@ -29,7 +29,9 @@ pub trait ClipboardManager {
     fn new_manager() -> Self;
     fn add_text(&self, text: String);
     fn clear(&self) -> Result<(), ClipboardError>;
+    fn first(&self) -> Result<ClipboardItem, ClipboardError>;
     fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError>;
+    fn delete(&self, text: &str) -> Result<usize, ClipboardError>;
     fn exists(&self, hash: &str) -> bool;
     fn move_to_top(&self, hash: &str) -> Result<(), ClipboardError>;
 }
@@ -83,6 +85,13 @@ impl ClipboardManager for InMemoryClipboardHistory {
         }
     }
 
+    fn first(&self) -> Result<ClipboardItem, ClipboardError> {
+        match self.items.lock() {
+            Ok(history_lock) => Ok(history_lock[0].clone()),
+            Err(PoisonError { .. }) => Err(ClipboardError::PoisonError),
+        }
+    }
+
     fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError> {
         match self.items.lock() {
             Ok(history_lock) => Ok(history_lock.clone()),
@@ -96,6 +105,22 @@ impl ClipboardManager for InMemoryClipboardHistory {
             Ok(history_lock) => history_lock.iter().any(|item| item.hash == hash),
             Err(PoisonError { .. }) => false,
         }
+    }
+
+    fn delete(&self, text: &str) -> Result<usize, ClipboardError> {
+        let hash = self.hash(text);
+        let mut history = match self.items.lock() {
+            Ok(history) => history,
+            Err(_) => return Err(ClipboardError::PoisonError),
+        };
+
+        let Some(idx) = history.iter().position(|item| item.hash == hash) else {
+            return Err(ClipboardError::ItemNotFound);
+        };
+
+        history.remove(idx);
+
+        Ok(idx)
     }
 
     fn move_to_top(&self, text: &str) -> Result<(), ClipboardError> {
@@ -119,8 +144,8 @@ impl ClipboardManager for InMemoryClipboardHistory {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ClipboardItem {
-    text: String,
-    hash: String,
+    pub text: String,
+    pub hash: String,
 }
 
 pub struct ClipboardEventsListener<T>
@@ -142,6 +167,8 @@ impl<T: ClipboardManager> ClipboardEventsListener<T> {
 
 impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
     fn on_clipboard_change(&mut self) -> CallbackResult {
+        println!("Clipboard changed");
+
         let text = self.handler.clipboard().read_text();
 
         // TODO: add image support
@@ -154,8 +181,6 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
 
         // I know this sucks, but it's just until I add image support
         let text = text.unwrap();
-
-        println!("Clipboard changed: {text}");
 
         if self.history.exists(&text) {
             match self.history.move_to_top(&text) {
@@ -185,4 +210,9 @@ pub fn clipboard_events_listener<T: ClipboardManager>(
 ) -> Master<ClipboardEventsListener<T>> {
     Master::new(ClipboardEventsListener::new(app_handler, history))
         .expect("Failed to create clipboard listener")
+}
+
+#[cff(target_os = "macos")]
+pub mod macos {
+    
 }

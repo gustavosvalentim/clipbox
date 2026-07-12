@@ -1,150 +1,147 @@
+@import "tailwindcss";
+
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 html,
 body,
 #root {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
 
 body {
-  margin: 0;
-  overflow: hidden;
-  background: transparent;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	margin: 0;
+	overflow: hidden;
+	background: transparent;
+	font-family:
+		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+		sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 button {
-  font: inherit;
+	font: inherit;
 }
 
 .menu {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  padding: .4rem .4rem;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 11px;
-  background: rgba(18, 18, 20, 0.0);
-  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.36);
-  color: rgba(245, 245, 247, 0.9);
-  display: flex;
-  flex-direction: column;
-  isolation: isolate;
-  transform: translateZ(0);
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+	padding: 0.4rem 0.4rem;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 11px;
+	background: rgba(18, 18, 20, 0);
+	box-shadow: 0 9px 22px rgba(0, 0, 0, 0.36);
+	color: rgba(245, 245, 247, 0.9);
+	display: flex;
+	flex-direction: column;
+	isolation: isolate;
+	transform: translateZ(0);
 }
 
 .menu::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: rgba(18, 18, 20, 0.68);
-  backdrop-filter: blur(12px) saturate(1.25);
-  -webkit-backdrop-filter: blur(12px) saturate(1.25);
-  transform: translateZ(0);
-  will-change: backdrop-filter;
-  pointer-events: none;
-  animation: menu-backdrop-repaint 1.6s linear infinite alternate;
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	border-radius: inherit;
+	background: rgba(18, 18, 20, 0.68);
+	backdrop-filter: blur(12px) saturate(1.25);
+	-webkit-backdrop-filter: blur(12px) saturate(1.25);
+	transform: translateZ(0);
+	will-change: backdrop-filter;
+	pointer-events: none;
+	animation: menu-backdrop-repaint 1.6s linear infinite alternate;
 }
 
 @keyframes menu-backdrop-repaint {
-  from {
-    opacity: 0.985;
-  }
+	from {
+		opacity: 0.985;
+	}
 
-  to {
-    opacity: 1;
-  }
+	to {
+		opacity: 1;
+	}
 }
 
 .menu__text {
-    padding: .4rem .8rem;
+	padding: 0.4rem 0.8rem;
 }
 
 .menu__content {
-  position: relative;
-  z-index: 1;
-  min-height: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+	position: relative;
+	z-index: 1;
+	min-height: 0;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
 }
 
 .menu__label {
-  height: 15px;
-  display: flex;
-  align-items: center;
-  color: rgba(235, 235, 245, 0.32);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1;
-  user-select: none;
+	height: 15px;
+	display: flex;
+	align-items: center;
+	color: rgba(235, 235, 245, 0.32);
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0;
+	line-height: 1;
+	user-select: none;
 }
 
 .menu__history {
-  min-height: 0;
-  flex: 1;
-  margin-top: 4px;
-  overflow-y: auto;
-  overflow-x: hidden;
+	min-height: 0;
+	flex: 1;
+	margin-top: 4px;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 .menu__history::-webkit-scrollbar {
-  display: none;
+	display: none;
 }
 
 .menu__item {
-  width: 100%;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: .4rem;
-  background: transparent;
-  color: inherit;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1;
-  text-align: left;
-  cursor: default;
+	width: 100%;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	border-radius: 0.4rem;
+	background: transparent;
+	color: inherit;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0;
+	line-height: 1;
+	text-align: left;
+	cursor: default;
 }
 
 .menu__item:hover,
 .menu__item:focus-visible,
 .menu__item.active {
-  background: #0a84ff;
-  color: #fff;
-  outline: none;
+	background: #0a84ff;
+	color: #fff;
+	outline: none;
 }
 
 .menu__title {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.menu__footer {
-  position: relative;
-  z-index: 1;
-  flex: 0 0 auto;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .menu__separator {
-  height: 1px;
-  margin: 4px 0;
-  background: rgba(235, 235, 245, 0.18);
+	height: 1px;
+	margin: 4px 0;
+	background: rgba(235, 235, 245, 0.18);
 }

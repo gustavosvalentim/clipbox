@@ -1,13 +1,14 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Mutex};
 
 use enigo::{Enigo, Mouse};
 use tauri::{LogicalPosition, Manager, Position};
 
 use crate::window::get_main_window;
+use crate::paste::PasteState;
 
 fn show_on_cursor_handler(app: &tauri::AppHandle) {
     if let Some(window) = get_main_window(app) {
-        let enigo = app.state::<Arc<Mutex<Enigo>>>();
+        let enigo = app.state::<Mutex<Enigo>>();
         let enigo = match enigo.lock() {
             Ok(enigo) => enigo,
             Err(_) => {
@@ -38,6 +39,14 @@ fn show_on_cursor_handler(app: &tauri::AppHandle) {
                 println!("Failed to position window: {e}");
                 return;
             }
+        }
+
+        let paste_target = app.state::<PasteState>();
+
+        if let Some(mut target) = paste_target.target() {
+            target.get_current_target();
+        } else {
+            println!("Failed to get current target");
         }
 
         let window = window.clone();
