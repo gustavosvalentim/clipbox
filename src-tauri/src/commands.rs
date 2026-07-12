@@ -63,7 +63,11 @@ pub fn hide_clipbox(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub fn delete_item(app: tauri::AppHandle, history: tauri::State<'_, InMemoryClipboardHistory>, text: String) {
+pub fn delete_item(
+    app: tauri::AppHandle,
+    history: tauri::State<'_, InMemoryClipboardHistory>,
+    text: String,
+) {
     // TODO: this is pretty slow when we delete the first item
     // the issue is that we need to wait for the frontend to receive
     // the "clipboard-changed" event, which takes a little while.
@@ -83,4 +87,3 @@ pub fn delete_item(app: tauri::AppHandle, history: tauri::State<'_, InMemoryClip
 
     app.emit("clipboard-changed", text).unwrap();
 }
-

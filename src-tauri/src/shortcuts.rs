@@ -1,10 +1,10 @@
-use std::sync::{Mutex};
+use std::sync::Mutex;
 
 use enigo::{Enigo, Mouse};
 use tauri::{LogicalPosition, Manager, Position};
 
-use crate::window::get_main_window;
 use crate::paste::PasteState;
+use crate::window::get_main_window;
 
 fn show_on_cursor_handler(app: &tauri::AppHandle) {
     if let Some(window) = get_main_window(app) {

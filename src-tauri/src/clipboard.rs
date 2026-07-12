@@ -222,4 +222,3 @@ pub fn clipboard_events_listener<T: ClipboardManager>(
     Master::new(ClipboardEventsListener::new(app_handler, history))
         .expect("Failed to create clipboard listener")
 }
-
