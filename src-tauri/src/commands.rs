@@ -1,9 +1,8 @@
 use std::vec::Vec;
 
-use tauri::Emitter;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use crate::clipboard::{ClipboardItem, ClipboardManager, InMemoryClipboardHistory};
+use crate::clipboard::{ClipboardItem, ClipboardManager, InMemoryClipboardHistory, ClipboardEventsEmitter};
 use crate::paste;
 use crate::window::get_main_window;
 
@@ -33,9 +32,7 @@ pub fn clear_clipboard_items(history: tauri::State<'_, InMemoryClipboardHistory>
 #[tauri::command]
 pub fn paste_from_selection(app: tauri::AppHandle, text: &str) {
     match paste::paste(&app, text) {
-        Ok(_) => {
-            app.emit("clipboard-changed", text).unwrap();
-        }
+        Ok(_) => app.emit_clipboard_changed().unwrap(),
         Err(e) => {
             println!("Failed to paste from selection: {e}");
         }
@@ -76,10 +73,10 @@ pub fn delete_item(
     let item_idx = item_idx as u32;
 
     if item_idx == 0 {
-        if let Ok(item) = history.first() {
+        if let Some(item) = history.first() {
             app.clipboard().write_text(item.text).unwrap();
         }
     }
 
-    app.emit("clipboard-changed", text).unwrap();
+    app.emit_clipboard_changed().unwrap();
 }

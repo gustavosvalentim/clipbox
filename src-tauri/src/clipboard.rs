@@ -27,9 +27,9 @@ impl std::fmt::Display for ClipboardError {
 
 pub trait ClipboardManager {
     fn new_manager() -> Self;
-    fn add_text(&self, text: String);
+    fn add_text(&self, text: String) -> Option<ClipboardItem>;
     fn clear(&self) -> Result<(), ClipboardError>;
-    fn first(&self) -> Result<ClipboardItem, ClipboardError>;
+    fn first(&self) -> Option<ClipboardItem>;
     fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError>;
     fn delete(&self, text: &str) -> Result<usize, ClipboardError>;
     fn exists(&self, hash: &str) -> bool;
@@ -65,14 +65,17 @@ impl ClipboardManager for InMemoryClipboardHistory {
         }
     }
 
-    fn add_text(&self, text: String) {
+    fn add_text(&self, text: String) -> Option<ClipboardItem> {
         if text.is_empty() {
-            return;
+            return None;
         }
 
         let hash = self.hash(&text);
+        let item = ClipboardItem { text, hash };
 
-        self.add_item(ClipboardItem { text, hash });
+        self.add_item(item);
+
+        self.first()
     }
 
     fn clear(&self) -> Result<(), ClipboardError> {
@@ -85,10 +88,11 @@ impl ClipboardManager for InMemoryClipboardHistory {
         }
     }
 
-    fn first(&self) -> Result<ClipboardItem, ClipboardError> {
-        match self.items.lock() {
-            Ok(history_lock) => Ok(history_lock[0].clone()),
-            Err(PoisonError { .. }) => Err(ClipboardError::PoisonError),
+    fn first(&self) -> Option<ClipboardItem> {
+        if let Ok(items) = self.items.lock() {
+            Some(items[0].clone())
+        } else {
+            None
         }
     }
 
@@ -180,31 +184,24 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
             }
         }
 
-        let text = self.handler.clipboard().read_text();
-
-        // TODO: add image support
-        // this is probably an image and we should get it using
-        // `AppHandle.clipboard().read_image()`.
-        // Need to figure out how to handle this in the UI and backend
-        if text.is_err() {
+        let Ok(text) = self.handler.clipboard().read_text() else {
+            // TODO: add image support
+            // this is probably an image and we should get it using
+            // `AppHandle.clipboard().read_image()`.
+            // Need to figure out how to handle this in the UI and backend
             return CallbackResult::Next;
-        }
-
-        // I know this sucks, but it's just until I add image support
-        let text = text.unwrap();
+        };
 
         if self.history.exists(&text) {
-            match self.history.move_to_top(&text) {
-                Ok(_) => {}
-                Err(e) => {
-                    println!("Failed to move item to top: {e}");
-                }
+            if let Err(e) = self.history.move_to_top(&text) {
+                println!("Failed to move item to top: {e}");
+                return CallbackResult::Next;
             }
-        } else {
-            self.history.add_text(text.clone());
         }
 
-        self.handler.emit("clipboard-changed", text).unwrap();
+        if self.history.add_text(text).is_some() {
+            let _ = self.handler.emit_clipboard_changed();
+        }
 
         CallbackResult::Next
     }
@@ -222,3 +219,16 @@ pub fn clipboard_events_listener<T: ClipboardManager>(
     Master::new(ClipboardEventsListener::new(app_handler, history))
         .expect("Failed to create clipboard listener")
 }
+
+const CLIPBOARD_CHANGED_EVENT: &str = "clipboard-changed";
+
+pub trait ClipboardEventsEmitter {
+    fn emit_clipboard_changed(&self) -> Result<(), tauri::Error>;
+}
+
+impl ClipboardEventsEmitter for tauri::AppHandle {
+    fn emit_clipboard_changed(&self) -> Result<(), tauri::Error> {
+        self.emit(CLIPBOARD_CHANGED_EVENT, "")
+    }
+}
+

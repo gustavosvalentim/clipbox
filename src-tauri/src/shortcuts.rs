@@ -1,77 +1,70 @@
 use std::sync::Mutex;
 
 use enigo::{Enigo, Mouse};
-use tauri::{LogicalPosition, Manager, Position};
+use tauri::{LogicalPosition, LogicalSize, Manager, Position, WebviewWindow};
 
 use crate::paste::PasteState;
 use crate::window::get_main_window;
 
 fn show_on_cursor_handler(app: &tauri::AppHandle) {
-    if let Some(window) = get_main_window(app) {
-        let enigo = app.state::<Mutex<Enigo>>();
-        let enigo = match enigo.lock() {
-            Ok(enigo) => enigo,
-            Err(_) => {
-                println!("Failed to get cursor position");
-                return;
-            }
-        };
+    app.state::<PasteState>().load_focused_window();
 
-        let (mouse_x, mouse_y) = match enigo.location() {
-            Ok(location) => location,
-            Err(_) => {
-                println!("Failed to get cursor position");
-                return;
-            }
-        };
+    let Some(window) = get_main_window(app) else {
+        println!("Failed to get main window");
+        return;
+    };
 
-        // Physical position causes the position to be off on HiDPI screens
-        // TODO: clamp the position to the screen size
-        // TODO: handle multi monitor setups
-        let cursor_position = LogicalPosition {
-            x: f64::from(mouse_x),
-            y: f64::from(mouse_y),
-        };
+    let enigo = app.state::<Mutex<Enigo>>();
+    let Ok(enigo) = enigo.lock() else {
+        println!("Failed to get cursor position");
+        return;
+    };
 
-        match window.set_position(Position::Logical(cursor_position)) {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Failed to position window: {e}");
-                return;
-            }
-        }
+    let Ok((mouse_x, mouse_y)) = enigo.location() else {
+        println!("Failed to get cursor position");
+        return;
+    };
 
-        let paste_target = app.state::<PasteState>();
+    // TODO: handle multi monitor setups
+    // Physical position causes the position to be off on HiDPI screens
+    // Enigo uses logical coordinates, meaning DPI affects the position.
+    // We need to clamp the position to the screen size, so we convert
+    // all sizes to logical coordinates.
+    // under the hood this is just size / scale_factor (DPI).
+    let window_size = get_window_logical_size(&window);
+    let monitor_size = get_screen_logical_size(&window);
 
-        if let Some(mut target) = paste_target.target() {
-            target.get_current_target();
-        } else {
-            println!("Failed to get current target");
-        }
+    let x = f64::from(mouse_x).clamp(0.0, monitor_size.width - window_size.width);
+    let y = f64::from(mouse_y).clamp(0.0, monitor_size.height - window_size.height);
+    let window_position = LogicalPosition { x, y };
 
-        let window = window.clone();
-        // this is a hack to make the window appear on the correct
-        // position without flickering.
-        // Because tauri window methods are async, show() may run before
-        // set_position() finishes, causing the window to briefly appear
-        // on the old position before moving to the new one.
-        // Since we don't want to block the main thread, we spawn another
-        // one to show the window; otherwise the flickering will be worse,
-        // since we block the main thread for a short time.
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(25));
-
-            match window.show() {
-                Ok(_) => {}
-                Err(e) => println!("Failed to show window: {e}"),
-            }
-
-            match window.set_focus() {
-                Ok(_) => {}
-                Err(e) => println!("Failed to focus window: {e}"),
-            }
-        });
+    if let Err(e) = window.set_position(Position::Logical(window_position)) {
+        println!("Failed to position window: {:?}", e);
+        return;
     }
+
+    let window = window.clone();
+    // this is a hack to make the window appear on the correct
+    // position without flickering.
+    // Because tauri window methods are async, show() may run before
+    // set_position() finishes, causing the window to briefly appear
+    // on the old position before moving to the new one.
+    // Since we don't want to block the main thread, we spawn another
+    // one to wait and then show the window; otherwise the flickering
+    // will be worse, since we block the main thread for a short time.
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(25));
+
+        match window.show() {
+            Ok(_) => {}
+            Err(e) => println!("Failed to show window: {e}"),
+        }
+
+        match window.set_focus() {
+            Ok(_) => {}
+            Err(e) => println!("Failed to focus window: {e}"),
+        }
+    });
 }
 
 pub fn register_shortcuts(app: &tauri::AppHandle) -> Result<(), tauri::Error> {
@@ -104,4 +97,26 @@ pub fn register_shortcuts(app: &tauri::AppHandle) -> Result<(), tauri::Error> {
     }
 
     Ok(())
+}
+
+fn get_window_logical_size(window: &WebviewWindow) -> LogicalSize<f64> {
+    let Ok(window_size) = window.inner_size() else {
+        return LogicalSize {
+            width: 0.0,
+            height: 0.0,
+        };
+    };
+
+    window_size.to_logical(window.scale_factor().unwrap())
+}
+
+fn get_screen_logical_size(window: &WebviewWindow) -> LogicalSize<f64> {
+    let Ok(Some(monitor)) = window.current_monitor() else {
+        return LogicalSize {
+            width: 0.0,
+            height: 0.0,
+        };
+    };
+
+    monitor.size().to_logical(window.scale_factor().unwrap())
 }
