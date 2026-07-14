@@ -1,4 +1,7 @@
-use tauri::{Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder, Window, WindowEvent};
+use tauri::{
+    window::{Effect, EffectState, EffectsBuilder},
+    Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder, Window, WindowEvent,
+};
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -34,6 +37,16 @@ pub fn create_clipbox_window(
         .visible(false)
         .visible_on_all_workspaces(true)
         .shadow(false)
+        // `Menu` matches a macOS popup menu more closely than `Popover`.
+        // Its radius clips the native backdrop too, rather than leaving a
+        // square vibrancy layer behind the rounded web content.
+        .effects(
+            EffectsBuilder::new()
+                .effect(Effect::Menu)
+                .state(EffectState::Active)
+                .radius(11.0)
+                .build(),
+        )
         .build();
 
     let window = match window {
