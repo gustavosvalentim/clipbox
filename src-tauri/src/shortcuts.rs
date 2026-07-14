@@ -2,6 +2,9 @@ use std::sync::Mutex;
 
 use enigo::{Enigo, Mouse};
 use tauri::{LogicalPosition, LogicalSize, Manager, Position, WebviewWindow};
+use tauri_plugin_global_shortcut::{
+    Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutEvent, ShortcutState,
+};
 
 use crate::paste::PasteState;
 use crate::window::get_main_window;
@@ -70,33 +73,40 @@ fn show_on_cursor_handler(app: &tauri::AppHandle) {
 pub fn register_shortcuts(app: &tauri::AppHandle) -> Result<(), tauri::Error> {
     #[cfg(desktop)]
     {
-        use tauri_plugin_global_shortcut::{
-            Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
-        };
-
-        let show_window_shortcut =
-            Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyV);
-
         let global_shortcut_handler = tauri_plugin_global_shortcut::Builder::new()
-            .with_handler(move |app, shortcut, event| {
-                if shortcut == &show_window_shortcut {
-                    match event.state() {
-                        ShortcutState::Pressed => show_on_cursor_handler(app),
-                        ShortcutState::Released => {}
-                    }
-                }
-            })
+            .with_handler(global_shortcut_handler)
             .build();
 
         app.plugin(global_shortcut_handler)?;
 
-        match app.global_shortcut().register(show_window_shortcut) {
-            Ok(_) => println!("Registered shortcut"),
-            Err(e) => println!("Failed to register shortcut: {e}"),
-        };
+        let show_window_shortcut = show_window_shortcut();
+        if let Err(e) = app.global_shortcut().register(show_window_shortcut) {
+            println!("Failed to register global shortcut: {e}");
+        }
     }
 
     Ok(())
+}
+
+fn global_shortcut_handler(app: &tauri::AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
+    let show_window_shortcut = show_window_shortcut();
+
+    if shortcut == &show_window_shortcut {
+        match event.state() {
+            ShortcutState::Pressed => show_on_cursor_handler(app),
+            ShortcutState::Released => {}
+        }
+    }
+}
+
+fn show_window_shortcut() -> Shortcut {
+    #[cfg(target_os = "macos")]
+    let mod_key = Modifiers::META;
+
+    #[cfg(not(target_os = "macos"))]
+    let mod_key = Modifiers::ALT;
+
+    Shortcut::new(Some(mod_key | Modifiers::SHIFT), Code::KeyV)
 }
 
 fn get_window_logical_size(window: &WebviewWindow) -> LogicalSize<f64> {

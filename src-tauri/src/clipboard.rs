@@ -90,6 +90,10 @@ impl ClipboardManager for InMemoryClipboardHistory {
 
     fn first(&self) -> Option<ClipboardItem> {
         if let Ok(items) = self.items.lock() {
+            if items.is_empty() {
+                return None;
+            }
+
             Some(items[0].clone())
         } else {
             None
@@ -197,6 +201,8 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
                 println!("Failed to move item to top: {e}");
                 return CallbackResult::Next;
             }
+
+            return CallbackResult::Next;
         }
 
         if self.history.add_text(text).is_some() {
@@ -231,4 +237,3 @@ impl ClipboardEventsEmitter for tauri::AppHandle {
         self.emit(CLIPBOARD_CHANGED_EVENT, "")
     }
 }
-

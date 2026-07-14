@@ -2,7 +2,9 @@ use std::vec::Vec;
 
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use crate::clipboard::{ClipboardItem, ClipboardManager, InMemoryClipboardHistory, ClipboardEventsEmitter};
+use crate::clipboard::{
+    ClipboardEventsEmitter, ClipboardItem, ClipboardManager, InMemoryClipboardHistory,
+};
 use crate::paste;
 use crate::window::get_main_window;
 
