@@ -107,13 +107,14 @@ function App() {
 						selectedItem >= 0 &&
 						selectedItem < clipboard.length;
 
-					if (isItemSelected && isDeleteItemActive) {
-						deleteItem(clipboard[selectedItem].text);
-					}
+          if (isItemSelected) {
+            if (isDeleteItemActive) {
+              deleteItem(clipboard[selectedItem].text);
+              return;
+            }
 
-					if (isItemSelected) {
-						pasteFromSelection(clipboard[selectedItem].text);
-					}
+            pasteFromSelection(clipboard[selectedItem].text);
+          }
 
 					return;
 				}
