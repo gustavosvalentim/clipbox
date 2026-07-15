@@ -145,22 +145,31 @@ pub struct ClipboardItem {
 }
 
 pub struct ClipboardEventsListener {
-    handler: Arc<tauri::AppHandle>,
+    handler: Master<ClipboardEventsHandler>,
 }
 
 impl ClipboardEventsListener {
-    pub fn new(app_handler: tauri::AppHandle) -> ClipboardEventsListener {
-        Self {
-            handler: Arc::new(app_handler),
-        }
+    pub fn new(app_handler: tauri::AppHandle) -> Result<ClipboardEventsListener, std::io::Error> {
+        let handler = Master::new(ClipboardEventsHandler::new(Arc::new(app_handler)))?;
+        Ok(Self { handler })
     }
 
-    pub fn start(self) -> Result<(), std::io::Error> {
-        Master::new(self)?.run()
+    pub fn start(mut self) -> Result<(), std::io::Error> {
+        self.handler.run()
     }
 }
 
-impl ClipboardHandler for ClipboardEventsListener {
+pub struct ClipboardEventsHandler {
+    app: Arc<tauri::AppHandle>,
+}
+
+impl ClipboardEventsHandler {
+    pub fn new(app: Arc<tauri::AppHandle>) -> Self {
+        Self { app }
+    }
+}
+
+impl ClipboardHandler for ClipboardEventsHandler {
     fn on_clipboard_change(&mut self) -> CallbackResult {
         println!("Clipboard changed");
 
@@ -170,12 +179,14 @@ impl ClipboardHandler for ClipboardEventsListener {
         {
             use crate::window::macos::active_window_pid;
 
-            if active_window_pid() as u32 == clipbox_pid {
-                return CallbackResult::Next;
+            if let Some(active_window_pid) = active_window_pid() {
+                if active_window_pid as u32 == clipbox_pid {
+                    return CallbackResult::Next;
+                }
             }
         }
 
-        let Ok(text) = self.handler.clipboard().read_text() else {
+        let Ok(text) = self.app.clipboard().read_text() else {
             // TODO: add image support
             // this is probably an image and we should get it using
             // `AppHandle.clipboard().read_image()`.
@@ -183,7 +194,7 @@ impl ClipboardHandler for ClipboardEventsListener {
             return CallbackResult::Next;
         };
 
-        let store = self.handler.state::<ClipboardStore>();
+        let store = self.app.state::<ClipboardStore>();
 
         if store.exists(&text) {
             if let Err(e) = store.move_to_top(&text) {
@@ -195,7 +206,7 @@ impl ClipboardHandler for ClipboardEventsListener {
         }
 
         if store.add_text(text) {
-            let _ = self.handler.emit_clipboard_changed();
+            let _ = self.app.emit_clipboard_changed();
         }
 
         CallbackResult::Next

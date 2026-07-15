@@ -75,14 +75,16 @@ pub mod macos {
 
     pub fn set_focused_window(pid: i32) {
         let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid);
-        app.unwrap()
-            .activateWithOptions(NSApplicationActivationOptions::empty());
+
+        if let Some(app) = app {
+            app.activateWithOptions(NSApplicationActivationOptions::empty());
+        }
     }
 
-    pub fn active_window_pid() -> i32 {
+    pub fn active_window_pid() -> Option<i32> {
         let workspace = NSWorkspace::sharedWorkspace();
         let app = workspace.frontmostApplication();
 
-        app.unwrap().processIdentifier()
+        Some(app?.processIdentifier())
     }
 }

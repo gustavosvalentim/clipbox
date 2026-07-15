@@ -88,7 +88,9 @@ impl PasteState {
             use crate::window::macos::active_window_pid;
 
             if let Ok(mut target) = self.target.lock() {
-                target.pid = active_window_pid();
+                if let Some(active_window_pid) = active_window_pid() {
+                    target.pid = active_window_pid;
+                }
             }
         }
     }

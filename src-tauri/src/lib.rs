@@ -74,11 +74,18 @@ pub fn run() {
                 panic!("Failed to register shortcuts: {e}");
             }
 
+            // TODO: implement shutdown
             let listener = ClipboardEventsListener::new(app_handle);
-
-            std::thread::spawn(move || {
-                listener.start().expect("Clipboard master shutdown");
-            });
+            match listener {
+                Ok(listener) => {
+                    std::thread::spawn(move || {
+                        listener.start().expect("Clipboard master shutdown");
+                    });
+                }
+                Err(e) => {
+                    panic!("Failed to create clipboard listener: {e}");
+                }
+            }
 
             Ok(())
         })
