@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::vec::Vec;
 
 use clipboard_master::{CallbackResult, ClipboardHandler, Master};
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 const MAX_ITEMS: usize = 120;
@@ -25,23 +25,18 @@ impl std::fmt::Display for ClipboardError {
     }
 }
 
-pub trait ClipboardManager {
-    fn new_manager() -> Self;
-    fn add_text(&self, text: String) -> Option<ClipboardItem>;
-    fn clear(&self) -> Result<(), ClipboardError>;
-    fn first(&self) -> Option<ClipboardItem>;
-    fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError>;
-    fn delete(&self, text: &str) -> Result<usize, ClipboardError>;
-    fn exists(&self, hash: &str) -> bool;
-    fn move_to_top(&self, hash: &str) -> Result<(), ClipboardError>;
+#[derive(Debug, Serialize)]
+pub struct ClipboardStore {
+    items: Mutex<Vec<ClipboardItem>>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct InMemoryClipboardHistory {
-    items: Arc<Mutex<Vec<ClipboardItem>>>,
-}
+impl ClipboardStore {
+    pub fn new() -> Self {
+        Self {
+            items: Mutex::new(Vec::new()),
+        }
+    }
 
-impl InMemoryClipboardHistory {
     fn add_item(&self, item: ClipboardItem) {
         let mut history = self.items.lock().expect("Failed to lock clipboard history");
 
@@ -56,18 +51,10 @@ impl InMemoryClipboardHistory {
         let text_digest = Md5::digest(text.as_bytes());
         format!("{:?}", text_digest)
     }
-}
 
-impl ClipboardManager for InMemoryClipboardHistory {
-    fn new_manager() -> Self {
-        Self {
-            items: Arc::new(Mutex::new(Vec::new())),
-        }
-    }
-
-    fn add_text(&self, text: String) -> Option<ClipboardItem> {
+    pub fn add_text(&self, text: String) -> bool {
         if text.is_empty() {
-            return None;
+            return false;
         }
 
         let hash = self.hash(&text);
@@ -75,10 +62,10 @@ impl ClipboardManager for InMemoryClipboardHistory {
 
         self.add_item(item);
 
-        self.first()
+        true
     }
 
-    fn clear(&self) -> Result<(), ClipboardError> {
+    pub fn clear(&self) -> Result<(), ClipboardError> {
         match self.items.lock() {
             Ok(mut history_lock) => {
                 history_lock.clear();
@@ -88,7 +75,7 @@ impl ClipboardManager for InMemoryClipboardHistory {
         }
     }
 
-    fn first(&self) -> Option<ClipboardItem> {
+    pub fn first(&self) -> Option<ClipboardItem> {
         if let Ok(items) = self.items.lock() {
             if items.is_empty() {
                 return None;
@@ -100,14 +87,14 @@ impl ClipboardManager for InMemoryClipboardHistory {
         }
     }
 
-    fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError> {
+    pub fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError> {
         match self.items.lock() {
             Ok(history_lock) => Ok(history_lock.clone()),
             Err(PoisonError { .. }) => Err(ClipboardError::PoisonError),
         }
     }
 
-    fn exists(&self, text: &str) -> bool {
+    pub fn exists(&self, text: &str) -> bool {
         let hash = self.hash(text);
         match self.items.lock() {
             Ok(history_lock) => history_lock.iter().any(|item| item.hash == hash),
@@ -115,7 +102,7 @@ impl ClipboardManager for InMemoryClipboardHistory {
         }
     }
 
-    fn delete(&self, text: &str) -> Result<usize, ClipboardError> {
+    pub fn delete(&self, text: &str) -> Result<usize, ClipboardError> {
         let hash = self.hash(text);
         let mut history = match self.items.lock() {
             Ok(history) => history,
@@ -131,8 +118,9 @@ impl ClipboardManager for InMemoryClipboardHistory {
         Ok(idx)
     }
 
-    fn move_to_top(&self, text: &str) -> Result<(), ClipboardError> {
+    pub fn move_to_top(&self, text: &str) -> Result<(), ClipboardError> {
         let hash = self.hash(text);
+
         match self.items.lock() {
             Ok(mut history) => {
                 let item_idx = history
@@ -145,7 +133,7 @@ impl ClipboardManager for InMemoryClipboardHistory {
 
                 Ok(())
             }
-            Err(PoisonError { .. }) => Err(ClipboardError::PoisonError),
+            Err(_) => Err(ClipboardError::PoisonError),
         }
     }
 }
@@ -156,24 +144,23 @@ pub struct ClipboardItem {
     pub hash: String,
 }
 
-pub struct ClipboardEventsListener<T>
-where
-    T: ClipboardManager,
-{
-    history: T,
+pub struct ClipboardEventsListener {
     handler: Arc<tauri::AppHandle>,
 }
 
-impl<T: ClipboardManager> ClipboardEventsListener<T> {
-    pub fn new(app_handler: tauri::AppHandle, history: T) -> ClipboardEventsListener<T> {
+impl ClipboardEventsListener {
+    pub fn new(app_handler: tauri::AppHandle) -> ClipboardEventsListener {
         Self {
-            history,
             handler: Arc::new(app_handler),
         }
     }
+
+    pub fn start(self) -> Result<(), std::io::Error> {
+        Master::new(self)?.run()
+    }
 }
 
-impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
+impl ClipboardHandler for ClipboardEventsListener {
     fn on_clipboard_change(&mut self) -> CallbackResult {
         println!("Clipboard changed");
 
@@ -196,8 +183,10 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
             return CallbackResult::Next;
         };
 
-        if self.history.exists(&text) {
-            if let Err(e) = self.history.move_to_top(&text) {
+        let store = self.handler.state::<ClipboardStore>();
+
+        if store.exists(&text) {
+            if let Err(e) = store.move_to_top(&text) {
                 println!("Failed to move item to top: {e}");
                 return CallbackResult::Next;
             }
@@ -205,7 +194,7 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
             return CallbackResult::Next;
         }
 
-        if self.history.add_text(text).is_some() {
+        if store.add_text(text) {
             let _ = self.handler.emit_clipboard_changed();
         }
 
@@ -216,14 +205,6 @@ impl<T: ClipboardManager> ClipboardHandler for ClipboardEventsListener<T> {
         println!("Clipboard error: {error}");
         CallbackResult::Next
     }
-}
-
-pub fn clipboard_events_listener<T: ClipboardManager>(
-    app_handler: tauri::AppHandle,
-    history: T,
-) -> Master<ClipboardEventsListener<T>> {
-    Master::new(ClipboardEventsListener::new(app_handler, history))
-        .expect("Failed to create clipboard listener")
 }
 
 const CLIPBOARD_CHANGED_EVENT: &str = "clipboard-changed";

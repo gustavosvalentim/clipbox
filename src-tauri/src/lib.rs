@@ -5,7 +5,7 @@ mod shortcuts;
 mod tray;
 mod window;
 
-use clipboard::{ClipboardManager, InMemoryClipboardHistory};
+use clipboard::{ClipboardEventsListener, ClipboardStore};
 use commands::{
     clear_clipboard_items, delete_item, hide_clipbox, list_clipboard_items, paste_from_selection,
     quit_clipbox,
@@ -23,7 +23,7 @@ const WINDOW_HEIGHT: f64 = 350.0;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let clipboard_history = InMemoryClipboardHistory::new_manager();
+    let clipboard_store = ClipboardStore::new();
 
     let enigo = match Enigo::new(&Settings::default()) {
         Ok(enigo) => Mutex::new(enigo),
@@ -35,7 +35,7 @@ pub fn run() {
     let paste_target = PasteState::new();
 
     tauri::Builder::default()
-        .manage(clipboard_history.clone())
+        .manage(clipboard_store)
         .manage(enigo)
         .manage(paste_target)
         .on_window_event(window_events_handler)
@@ -64,7 +64,6 @@ pub fn run() {
 
             if let Err(e) = create_clipbox_window(&app_handle, window_settings) {
                 panic!("Failed to create clipbox window: {e}");
-                // TODO: handle this error
             }
 
             if let Err(e) = tray::create(&app_handle) {
@@ -75,10 +74,10 @@ pub fn run() {
                 panic!("Failed to register shortcuts: {e}");
             }
 
-            let mut listener = clipboard::clipboard_events_listener(app_handle, clipboard_history);
+            let listener = ClipboardEventsListener::new(app_handle);
 
-            tauri::async_runtime::spawn(async move {
-                listener.run().expect("Clipboard master shutdown");
+            std::thread::spawn(move || {
+                listener.start().expect("Clipboard master shutdown");
             });
 
             Ok(())
