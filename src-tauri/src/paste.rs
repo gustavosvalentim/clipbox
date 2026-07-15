@@ -4,7 +4,7 @@ use enigo::{Direction, Enigo, Key, Keyboard};
 use tauri::Manager;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use crate::clipboard::{ClipboardItem, ClipboardManager, InMemoryClipboardHistory};
+use crate::clipboard::{ClipboardItem, ClipboardStore};
 use crate::window::get_main_window;
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ impl std::fmt::Display for PasteError {
 }
 
 pub fn paste(app: &tauri::AppHandle, text: &str) -> Result<ClipboardItem, PasteError> {
-    let history = app.state::<InMemoryClipboardHistory>();
+    let history = app.state::<ClipboardStore>();
     let paste_target = app.state::<PasteState>();
     let enigo = app.state::<Mutex<Enigo>>();
 
@@ -63,6 +63,7 @@ fn simulate_paste_inputs(enigo: &mut Enigo) {
 
     let _ = enigo.key(mod_key, Direction::Press);
     let _ = enigo.key(Key::Unicode('v'), Direction::Press);
+    let _ = enigo.key(Key::Unicode('v'), Direction::Release);
     let _ = enigo.key(mod_key, Direction::Release);
 }
 

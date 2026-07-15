@@ -2,16 +2,12 @@ use std::vec::Vec;
 
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use crate::clipboard::{
-    ClipboardEventsEmitter, ClipboardItem, ClipboardManager, InMemoryClipboardHistory,
-};
+use crate::clipboard::{ClipboardEventsEmitter, ClipboardItem, ClipboardStore};
 use crate::paste;
 use crate::window::get_main_window;
 
 #[tauri::command]
-pub fn list_clipboard_items(
-    history: tauri::State<'_, InMemoryClipboardHistory>,
-) -> Vec<ClipboardItem> {
+pub fn list_clipboard_items(history: tauri::State<'_, ClipboardStore>) -> Vec<ClipboardItem> {
     match history.list() {
         Ok(items) => items,
         Err(e) => {
@@ -22,7 +18,7 @@ pub fn list_clipboard_items(
 }
 
 #[tauri::command]
-pub fn clear_clipboard_items(history: tauri::State<'_, InMemoryClipboardHistory>) {
+pub fn clear_clipboard_items(history: tauri::State<'_, ClipboardStore>) {
     match history.clear() {
         Ok(_) => {}
         Err(e) => {
@@ -62,11 +58,7 @@ pub fn hide_clipbox(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub fn delete_item(
-    app: tauri::AppHandle,
-    history: tauri::State<'_, InMemoryClipboardHistory>,
-    text: String,
-) {
+pub fn delete_item(app: tauri::AppHandle, history: tauri::State<'_, ClipboardStore>, text: String) {
     let Ok(item_idx) = history.delete(&text) else {
         println!("Failed to delete item from clipboard history");
         return;

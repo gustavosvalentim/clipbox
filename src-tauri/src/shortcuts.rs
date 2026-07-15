@@ -55,17 +55,15 @@ fn show_on_cursor_handler(app: &tauri::AppHandle) {
     // Since we don't want to block the main thread, we spawn another
     // one to wait and then show the window; otherwise the flickering
     // will be worse, since we block the main thread for a short time.
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(25));
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
 
-        match window.show() {
-            Ok(_) => {}
-            Err(e) => println!("Failed to show window: {e}"),
+        if let Err(e) = window.show() {
+            println!("Failed to show window: {e}")
         }
 
-        match window.set_focus() {
-            Ok(_) => {}
-            Err(e) => println!("Failed to focus window: {e}"),
+        if let Err(e) = window.set_focus() {
+            println!("Failed to focus window: {e}")
         }
     });
 }
