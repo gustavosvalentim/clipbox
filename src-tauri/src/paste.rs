@@ -69,13 +69,7 @@ fn simulate_paste_inputs(enigo: &mut Enigo) -> Result<(), PasteError> {
         return Err(PasteError::InputSimError(e));
     }
 
-    if let Err(e) = enigo.key(Key::Unicode('v'), Direction::Press) {
-        return Err(PasteError::InputSimError(e));
-    } else {
-        if let Err(e) = enigo.key(Key::Unicode('v'), Direction::Release) {
-            return Err(PasteError::InputSimError(e));
-        }
-    }
+    let _ = enigo.key(Key::Unicode('v'), Direction::Click);
 
     if let Err(e) = enigo.key(mod_key, Direction::Release) {
         return Err(PasteError::InputSimError(e));
