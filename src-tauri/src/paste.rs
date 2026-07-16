@@ -47,7 +47,7 @@ pub fn paste_from_selection(app: &tauri::AppHandle, text: &str) -> Result<(), Pa
         }
     }
 
-    if !paste_target.activate_last_focused_window() {
+    if let Err(e) = paste_target.restore_focus() {
         return Err(PasteError::WindowError);
     }
 
@@ -92,6 +92,12 @@ pub struct PasteState {
     last_focused_window: Mutex<AppInfo>,
 }
 
+pub enum PasteStateError {
+    PlatformUnsupported,
+    StatePoisonError,
+    WindowHandlerError,
+}
+
 impl PasteState {
     pub fn new() -> Self {
         Self {
@@ -110,21 +116,24 @@ impl PasteState {
         }
     }
 
-    pub fn activate_last_focused_window(&self) -> bool {
+    pub fn restore_focus(&self) -> Result<(), PasteStateError> {
         #[cfg(target_os = "macos")]
         {
             use crate::window::macos::set_focused_window;
 
             if let Ok(target) = self.last_focused_window.lock() {
-                if let Some(pid) = target.pid {
-                    set_focused_window(pid);
-                    return true;
+                let Some(pid) = target.pid else {
+                    return Err(PasteStateError::WindowHandlerError);
+                };
+
+                if set_focused_window(pid) {
+                    return Ok(());
                 }
 
-                return false;
+                return Err(PasteStateError::StatePoisonError);
             }
         }
 
-        false
+        Err(PasteStateError::PlatformUnsupported)
     }
 }

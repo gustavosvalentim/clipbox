@@ -40,24 +40,18 @@ function App() {
 		}
 	}, []);
 
-	const pasteFromSelection = useCallback(
-		async (text: string) => {
-			try {
-				await invoke("paste", { text });
-			} catch (error) {
-				console.error("Failed to paste from selection", error);
-			}
-		},
-		[],
-	);
+	const pasteFromSelection = useCallback(async (text: string) => {
+		try {
+			await invoke("paste", { text });
+		} catch (error) {
+			console.error("Failed to paste from selection", error);
+		}
+	}, []);
 
-	const deleteItem = useCallback(
-		async (text: string) => {
-      await invoke("delete_item", { text });
-      setSelectedItem(prev => prev && prev > 0 ? prev - 1 : null);
-    },
-		[]
-	);
+	const deleteItem = useCallback(async (text: string) => {
+		await invoke("delete_item", { text });
+		setSelectedItem((prev) => (prev && prev > 0 ? prev - 1 : null));
+	}, []);
 
 	const actionsMenuItems = [
 		{ label: "Clear History", onClick: clearHistory, icon: Trash2 },
@@ -119,15 +113,15 @@ function App() {
 
 					return;
 				}
-        case "Backspace":
-        case "Delete":
-          event.preventDefault();
-          
-          if (selectedItem !== null) {
-            deleteItem(clipboard[selectedItem].text);
-          }
+				case "Backspace":
+				case "Delete":
+					event.preventDefault();
 
-          break;
+					if (selectedItem !== null) {
+						deleteItem(clipboard[selectedItem].text);
+					}
+
+					break;
 				case "Escape":
 					event.preventDefault();
 					hideClipbox();

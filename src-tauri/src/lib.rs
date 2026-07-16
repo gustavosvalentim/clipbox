@@ -6,10 +6,7 @@ mod tray;
 mod window;
 
 use clipboard::{ClipboardEventsListener, ClipboardStore};
-use commands::{
-    clear, delete_item, close, fetch_clipboard, paste,
-    quit,
-};
+use commands::{clear, close, delete_item, fetch_clipboard, paste, quit};
 use paste::PasteState;
 use shortcuts::register_shortcuts;
 use window::{create_clipbox_window, window_events_handler};

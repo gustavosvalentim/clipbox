@@ -73,12 +73,12 @@ pub fn window_events_handler(window: &Window, event: &WindowEvent) {
 pub mod macos {
     use objc2_app_kit::{NSApplicationActivationOptions, NSRunningApplication, NSWorkspace};
 
-    pub fn set_focused_window(pid: i32) {
-        let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid);
+    pub fn set_focused_window(pid: i32) -> bool {
+        let Some(app) = NSRunningApplication::runningApplicationWithProcessIdentifier(pid) else {
+            return false;
+        };
 
-        if let Some(app) = app {
-            app.activateWithOptions(NSApplicationActivationOptions::empty());
-        }
+        app.activateWithOptions(NSApplicationActivationOptions::empty())
     }
 
     pub fn active_window_pid() -> Option<i32> {

@@ -89,7 +89,7 @@ impl ClipboardStore {
 
     pub fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError> {
         match self.items.lock() {
-            Ok(history_lock) => Ok(history_lock.clone()),
+            Ok(items) => Ok(items.clone()),
             Err(PoisonError { .. }) => Err(ClipboardError::PoisonError),
         }
     }

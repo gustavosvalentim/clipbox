@@ -46,7 +46,7 @@ pub fn close(app: tauri::AppHandle) {
     let _ = window.hide();
 
     let paste_target = app.state::<PasteState>();
-    paste_target.activate_last_focused_window();
+    paste_target.restore_focus();
 }
 
 #[tauri::command]
