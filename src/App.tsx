@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Trash2 } from "react-feather";
 import { ListItem } from "./components/ListItem";
@@ -70,7 +71,11 @@ function App() {
 
 	const handleKeyDown = useCallback(
 		(event: KeyboardEvent) => {
+			const isValidItem = (itemIdx: number) =>
+				itemIdx >= 0 && itemIdx < clipboard.length;
+
 			let newSelectedItem = selectedItem;
+
 			switch (event.key) {
 				case "ArrowUp":
 					event.preventDefault();
@@ -97,12 +102,8 @@ function App() {
 					break;
 				case "Enter": {
 					event.preventDefault();
-					const isItemSelected =
-						selectedItem !== null &&
-						selectedItem >= 0 &&
-						selectedItem < clipboard.length;
 
-					if (isItemSelected) {
+					if (selectedItem !== null && isValidItem(selectedItem)) {
 						if (isDeleteItemActive) {
 							deleteItem(clipboard[selectedItem].text);
 							return;
@@ -117,7 +118,7 @@ function App() {
 				case "Delete":
 					event.preventDefault();
 
-					if (selectedItem !== null) {
+					if (selectedItem !== null && isValidItem(selectedItem)) {
 						deleteItem(clipboard[selectedItem].text);
 					}
 
@@ -130,10 +131,7 @@ function App() {
 					break;
 			}
 
-			if (
-				newSelectedItem !== null &&
-				(newSelectedItem < 0 || newSelectedItem >= clipboard.length)
-			) {
+			if (newSelectedItem === null || !isValidItem(newSelectedItem)) {
 				newSelectedItem = 0;
 			}
 
@@ -153,8 +151,18 @@ function App() {
 		setSelectedItem(null);
 	}, []);
 
+	const handleFocus = useCallback(() => {
+		fetchClipboardHistory();
+	}, [fetchClipboardHistory]);
+
 	useEffect(() => {
-		const unlisten = listen<string>("clipboard-changed", fetchClipboardHistory);
+		const unlisten = listen<string>("clipboard-changed", async () => {
+			const isVisible = await getCurrentWindow().isVisible();
+
+			if (!isVisible) return;
+
+			fetchClipboardHistory();
+		});
 
 		return () => {
 			unlisten.then((unlisten) => unlisten());
@@ -163,13 +171,15 @@ function App() {
 
 	useEffect(() => {
 		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("focus", handleFocus);
 		window.addEventListener("blur", handleBlur);
 
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("focus", handleFocus);
 			window.removeEventListener("blur", handleBlur);
 		};
-	}, [handleKeyDown, handleBlur]);
+	}, [handleKeyDown, handleBlur, handleFocus]);
 
 	return (
 		<div className="menu text-gray-100/80">

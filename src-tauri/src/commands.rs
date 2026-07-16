@@ -9,13 +9,18 @@ use crate::window::get_main_window;
 
 #[tauri::command]
 pub fn fetch_clipboard(history: tauri::State<'_, ClipboardStore>) -> Vec<ClipboardItem> {
+    println!("Fetch clipboard");
     history.list().unwrap_or_default()
 }
 
 #[tauri::command]
-pub fn clear(history: tauri::State<'_, ClipboardStore>) {
+pub fn clear(app: tauri::AppHandle, history: tauri::State<'_, ClipboardStore>) {
     if let Err(e) = history.clear() {
         println!("Failed to clear clipboard history: {e}");
+    }
+
+    if let Err(e) = app.emit_clipboard_changed() {
+        println!("Failed to emit clipboard changed event: {e}");
     }
 }
 
@@ -46,11 +51,15 @@ pub fn close(app: tauri::AppHandle) {
     let _ = window.hide();
 
     let paste_target = app.state::<PasteState>();
-    paste_target.restore_focus();
+    let _ = paste_target.restore_focus();
 }
 
 #[tauri::command]
 pub fn delete_item(app: tauri::AppHandle, history: tauri::State<'_, ClipboardStore>, text: String) {
+    if text.is_empty() {
+        return;
+    }
+
     let Ok(item_idx) = history.delete(&text) else {
         println!("Failed to delete item from clipboard history");
         return;

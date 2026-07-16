@@ -47,7 +47,7 @@ pub fn paste_from_selection(app: &tauri::AppHandle, text: &str) -> Result<(), Pa
         }
     }
 
-    if let Err(e) = paste_target.restore_focus() {
+    if paste_target.restore_focus().is_err() {
         return Err(PasteError::WindowError);
     }
 
