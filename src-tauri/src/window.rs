@@ -25,7 +25,7 @@ impl std::fmt::Display for WindowError {
     }
 }
 
-pub fn create_clipbox_window(
+pub fn create_klipo_window(
     app: &tauri::AppHandle,
     settings: Settings,
 ) -> Result<WebviewWindow, WindowError> {

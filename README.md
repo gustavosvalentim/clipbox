@@ -1,12 +1,12 @@
-# 📋 Clipbox
+# 📋 Klipo
 
-Clipbox is a small clipboard history app built with Tauri, React, TypeScript, and Rust.
+Klipo is a small clipboard history app built with Tauri, React, TypeScript, and Rust.
 
-It runs as a lightweight desktop utility: copy text normally, open Clipbox with a global shortcut, choose a previous clipboard item, and paste it back into the app you were using.
+It runs as a lightweight desktop utility: copy text normally, open Klipo with a global shortcut, choose a previous clipboard item, and paste it back into the app you were using.
 
 ## 🍎 Platform support
 
-Clipbox is currently macOS-focused.
+Klipo is currently macOS-focused.
 
 Several parts of the app depend on macOS-specific behavior, including private Tauri macOS APIs, AppKit window focus handling, accessory app mode, a translucent floating window, and simulated paste behavior using the macOS command key.
 
@@ -23,14 +23,14 @@ Linux and Windows support is TBD. Some code paths exist for those platforms, but
 
 ## ⌨️ Usage
 
-- `Ctrl+Alt+V`: show Clipbox at the current cursor position.
+- `Ctrl+Alt+V`: show Klipo at the current cursor position.
 - `ArrowUp` / `ArrowDown`: move through clipboard items.
 - `ArrowRight`: focus the delete action for the selected item.
 - `ArrowLeft`: return focus to the selected clipboard item.
 - `Enter`: paste the selected item, or delete it when the delete action is active.
-- `Escape`: hide Clipbox.
+- `Escape`: hide Klipo.
 
-Clipbox currently stores text only. Image clipboard support is not implemented yet, and history is not persisted across app restarts.
+Klipo currently stores text only. Image clipboard support is not implemented yet, and history is not persisted across app restarts.
 
 ## 🛠️ Development
 
@@ -117,6 +117,6 @@ bun run format
 
 ## 🔐 macOS permissions
 
-Because Clipbox listens for global shortcuts, tracks the clipboard, restores focus to the previous app, and simulates paste, macOS may require permissions such as Accessibility or Input Monitoring depending on your system settings.
+Because Klipo listens for global shortcuts, tracks the clipboard, restores focus to the previous app, and simulates paste, macOS may require permissions such as Accessibility or Input Monitoring depending on your system settings.
 
-If the picker opens but cannot paste back into another app, check macOS System Settings privacy permissions for the built Clipbox app or the development terminal running it.
+If the picker opens but cannot paste back into another app, check macOS System Settings privacy permissions for the built Klipo app or the development terminal running it.

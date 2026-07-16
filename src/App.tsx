@@ -22,7 +22,7 @@ function App() {
 	const [selectedItem, setSelectedItem] = useState<number | null>(null);
 	const [isDeleteItemActive, setIsDeleteItemActive] = useState(false);
 
-	const hideClipbox = useCallback(() => invoke("close"), []);
+	const hide = useCallback(() => invoke("close"), []);
 
 	const fetchClipboardHistory = useCallback(async () => {
 		try {
@@ -125,7 +125,7 @@ function App() {
 					break;
 				case "Escape":
 					event.preventDefault();
-					hideClipbox();
+					hide();
 					break;
 				default:
 					break;
@@ -142,7 +142,7 @@ function App() {
 			isDeleteItemActive,
 			selectedItem,
 			pasteFromSelection,
-			hideClipbox,
+			hide,
 			deleteItem,
 		],
 	);
@@ -186,7 +186,7 @@ function App() {
 			<div className="menu__content">
 				<div className="flex justify-between items-center mx-2">
 					<div className="flex justify-left items-center">
-						<span className="text-base font-bold">Clipbox</span>
+						<span className="text-base font-bold">Klipo</span>
 					</div>
 
 					<div className="flex justify-right items-center">

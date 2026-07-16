@@ -173,14 +173,14 @@ impl ClipboardHandler for ClipboardEventsHandler {
     fn on_clipboard_change(&mut self) -> CallbackResult {
         println!("Clipboard changed");
 
-        let clipbox_pid = std::process::id();
+        let klipo_pid = std::process::id();
 
         #[cfg(target_os = "macos")]
         {
             use crate::window::macos::active_window_pid;
 
             if let Some(active_window_pid) = active_window_pid() {
-                if active_window_pid as u32 == clipbox_pid {
+                if active_window_pid as u32 == klipo_pid {
                     return CallbackResult::Next;
                 }
             }

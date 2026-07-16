@@ -9,7 +9,7 @@ use clipboard::{ClipboardEventsListener, ClipboardStore};
 use commands::{clear, close, delete_item, fetch_clipboard, paste, quit};
 use paste::PasteState;
 use shortcuts::register_shortcuts;
-use window::{create_clipbox_window, window_events_handler};
+use window::{create_klipo_window, window_events_handler};
 
 use std::sync::Mutex;
 
@@ -59,8 +59,8 @@ pub fn run() {
                 decorations: false,
             };
 
-            if let Err(e) = create_clipbox_window(&app_handle, window_settings) {
-                panic!("Failed to create clipbox window: {e}");
+            if let Err(e) = create_klipo_window(&app_handle, window_settings) {
+                panic!("Failed to create Klipo window: {e}");
             }
 
             if let Err(e) = tray::create(&app_handle) {
