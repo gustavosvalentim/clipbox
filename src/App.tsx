@@ -21,11 +21,11 @@ function App() {
 	const [selectedItem, setSelectedItem] = useState<number | null>(null);
 	const [isDeleteItemActive, setIsDeleteItemActive] = useState(false);
 
-	const hideClipbox = useCallback(() => invoke("hide_clipbox"), []);
+	const hideClipbox = useCallback(() => invoke("close"), []);
 
 	const fetchClipboardHistory = useCallback(async () => {
 		try {
-			const clipboard = await invoke<ClipboardItem[]>("list_clipboard_items");
+			const clipboard = await invoke<ClipboardItem[]>("fetch_clipboard");
 			setClipboard(clipboard);
 		} catch (error) {
 			console.error("Failed to get clipboard history", error);
@@ -34,28 +34,29 @@ function App() {
 
 	const clearHistory = useCallback(async () => {
 		try {
-			await invoke("clear_clipboard_items");
-			fetchClipboardHistory();
+			await invoke("clear");
 		} catch (error) {
 			console.error("Failed to clear clipboard history", error);
 		}
-	}, [fetchClipboardHistory]);
+	}, []);
 
 	const pasteFromSelection = useCallback(
 		async (text: string) => {
 			try {
-				await invoke("paste_from_selection", { text });
-				fetchClipboardHistory();
+				await invoke("paste", { text });
 			} catch (error) {
 				console.error("Failed to paste from selection", error);
 			}
 		},
-		[fetchClipboardHistory],
+		[],
 	);
 
 	const deleteItem = useCallback(
-		(text: string) => invoke("delete_item", { text }),
-		[],
+		async (text: string) => {
+      await invoke("delete_item", { text });
+      setSelectedItem(prev => prev && prev > 0 ? prev - 1 : null);
+    },
+		[]
 	);
 
 	const actionsMenuItems = [
@@ -118,6 +119,15 @@ function App() {
 
 					return;
 				}
+        case "Backspace":
+        case "Delete":
+          event.preventDefault();
+          
+          if (selectedItem !== null) {
+            deleteItem(clipboard[selectedItem].text);
+          }
+
+          break;
 				case "Escape":
 					event.preventDefault();
 					hideClipbox();
@@ -149,10 +159,6 @@ function App() {
 		setSelectedItem(null);
 	}, []);
 
-	const handleFocus = useCallback(() => {
-		fetchClipboardHistory();
-	}, [fetchClipboardHistory]);
-
 	useEffect(() => {
 		const unlisten = listen<string>("clipboard-changed", fetchClipboardHistory);
 
@@ -163,15 +169,13 @@ function App() {
 
 	useEffect(() => {
 		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("focus", handleFocus);
 		window.addEventListener("blur", handleBlur);
 
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("focus", handleFocus);
 			window.removeEventListener("blur", handleBlur);
 		};
-	}, [handleKeyDown, handleFocus, handleBlur]);
+	}, [handleKeyDown, handleBlur]);
 
 	return (
 		<div className="menu text-gray-100/80">

@@ -7,8 +7,8 @@ mod window;
 
 use clipboard::{ClipboardEventsListener, ClipboardStore};
 use commands::{
-    clear_clipboard_items, delete_item, hide_clipbox, list_clipboard_items, paste_from_selection,
-    quit_clipbox,
+    clear, delete_item, close, fetch_clipboard, paste,
+    quit,
 };
 use paste::PasteState;
 use shortcuts::register_shortcuts;
@@ -42,11 +42,11 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
-            list_clipboard_items,
-            paste_from_selection,
-            clear_clipboard_items,
-            quit_clipbox,
-            hide_clipbox,
+            fetch_clipboard,
+            paste,
+            clear,
+            quit,
+            close,
             delete_item,
         ])
         .setup(|app| {
