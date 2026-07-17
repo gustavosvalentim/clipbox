@@ -25,7 +25,8 @@ pub fn run() {
     let enigo = match Enigo::new(&Settings::default()) {
         Ok(enigo) => Mutex::new(enigo),
         Err(e) => {
-            panic!("Failed to create Enigo instance: {e}");
+            println!("Failed to start enigo: {e}");
+            return;
         }
     };
 
