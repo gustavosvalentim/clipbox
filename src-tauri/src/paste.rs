@@ -122,19 +122,19 @@ impl PasteState {
         {
             use crate::window::macos::set_focused_window;
 
-            if let Ok(target) = self.last_focused_window.lock() {
-                let Some(pid) = target.pid else {
-                    return Err(PasteStateError::WindowHandlerError);
-                };
+            let target = self.last_focused_window.lock().map_err(|_| PasteStateError::StatePoisonError)?;
+            let pid = target.pid.ok_or(PasteStateError::WindowHandlerError)?;
 
-                if set_focused_window(pid) {
-                    return Ok(());
-                }
-
-                return Err(PasteStateError::StatePoisonError);
+            if set_focused_window(pid) {
+                Ok(())
+            } else {
+                Err(PasteStateError::StatePoisonError)
             }
         }
 
-        Err(PasteStateError::PlatformUnsupported)
+        #[cfg(not(target_os = "macos"))]
+        {
+            Err(PasteStateError::PlatformUnsupported)
+        }
     }
 }
