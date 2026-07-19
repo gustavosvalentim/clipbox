@@ -66,40 +66,37 @@ impl ClipboardStore {
     }
 
     pub fn clear(&self) -> Result<(), ClipboardError> {
-        match self.items.lock() {
-            Ok(mut history_lock) => {
-                history_lock.clear();
-                Ok(())
-            }
-            Err(PoisonError { .. }) => Err(ClipboardError::PoisonError),
-        }
+        self.items.lock()
+            .map_err(|_| ClipboardError::PoisonError)?
+            .clear();
+
+        Ok(())
     }
 
     pub fn first(&self) -> Option<ClipboardItem> {
-        if let Ok(items) = self.items.lock() {
-            if items.is_empty() {
-                return None;
-            }
+        let guard = self.items.lock().ok()?;
 
-            Some(items[0].clone())
-        } else {
+        if guard.is_empty() {
             None
+        } else {
+            Some(guard[0].clone())
         }
     }
 
     pub fn list(&self) -> Result<Vec<ClipboardItem>, ClipboardError> {
-        match self.items.lock() {
-            Ok(items) => Ok(items.clone()),
-            Err(PoisonError { .. }) => Err(ClipboardError::PoisonError),
-        }
+        let guard = self.items.lock().map_err(|_| ClipboardError::PoisonError)?;
+
+        Ok(guard.clone())
     }
 
     pub fn exists(&self, text: &str) -> bool {
         let hash = self.hash(text);
-        match self.items.lock() {
-            Ok(history_lock) => history_lock.iter().any(|item| item.hash == hash),
-            Err(PoisonError { .. }) => false,
-        }
+        let Ok(guard) = self.items.lock() else {
+            return false;
+        };
+
+        guard.iter()
+            .any(|item| item.hash == hash)
     }
 
     pub fn delete(&self, text: &str) -> Result<usize, ClipboardError> {
@@ -121,20 +118,19 @@ impl ClipboardStore {
     pub fn move_to_top(&self, text: &str) -> Result<(), ClipboardError> {
         let hash = self.hash(text);
 
-        match self.items.lock() {
-            Ok(mut history) => {
-                let item_idx = history
-                    .iter()
-                    .position(|item| item.hash == hash)
-                    .ok_or(ClipboardError::ItemNotFound)?;
+        let mut guard = self.items.lock()
+            .map_err(|_| ClipboardError::PoisonError)?;
 
-                let item = history.remove(item_idx);
-                history.insert(0, item);
+        let item_idx = guard 
+            .iter()
+            .position(|item| item.hash == hash)
+            .ok_or(ClipboardError::ItemNotFound)?;
 
-                Ok(())
-            }
-            Err(_) => Err(ClipboardError::PoisonError),
-        }
+        let item = guard.remove(item_idx);
+
+        guard.insert(0, item);
+
+        Ok(())
     }
 }
 

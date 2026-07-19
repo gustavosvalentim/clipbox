@@ -24,6 +24,9 @@ pub fn run() {
 
     if input_state.enable().is_err() {
         // TODO: display window asking for accessibility permissions
+        // TODO: try to identify if the user accepted the permissions
+        // because running `input_state.enable()` will open the permission
+        // window again
         println!("Failed to enable input");
     }
 
@@ -55,30 +58,15 @@ pub fn run() {
                 decorations: false,
             };
 
-            if let Err(e) = create_klipo_window(&app_handle, window_settings) {
-                panic!("Failed to create Klipo window: {e}");
-            }
-
-            if let Err(e) = tray::create(&app_handle) {
-                panic!("Failed to create tray icon: {e}");
-            }
-
-            if let Err(e) = register_shortcuts(&app_handle) {
-                panic!("Failed to register shortcuts: {e}");
-            }
+            register_shortcuts(&app_handle)?;
+            tray::create(&app_handle)?;
+            create_klipo_window(&app_handle, window_settings).map_err(|_| tauri::Error::WindowNotFound)?;
 
             // TODO: implement shutdown
-            let listener = ClipboardEventsListener::new(app_handle);
-            match listener {
-                Ok(listener) => {
-                    std::thread::spawn(move || {
-                        listener.start().expect("Clipboard master shutdown");
-                    });
-                }
-                Err(e) => {
-                    panic!("Failed to create clipboard listener: {e}");
-                }
-            }
+            let listener = ClipboardEventsListener::new(app_handle)?;
+            std::thread::spawn(move || {
+                listener.start().expect("Clipboard master shutdown");
+            });
 
             Ok(())
         })
