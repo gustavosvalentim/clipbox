@@ -5,7 +5,7 @@ use tauri_plugin_global_shortcut::{
 };
 
 use crate::input::InputState;
-use crate::paste::WindowManager;
+use crate::paste::PasteState;
 use crate::window::get_main_window;
 
 pub enum ShortcutError {
@@ -14,7 +14,9 @@ pub enum ShortcutError {
 }
 
 fn show_on_cursor_handler(app: &tauri::AppHandle) {
-    app.state::<WindowManager>().load_focused_window();
+    if let Err(e) = app.state::<PasteState>().get_and_store() {
+        println!("Failed to get and store window state: {e}");
+    }
 
     let Some(window) = get_main_window(app) else {
         println!("Failed to get main window");
@@ -121,7 +123,10 @@ fn get_screen_logical_size(window: &WebviewWindow) -> LogicalSize<f64> {
 
 fn get_cursor_position(app: &tauri::AppHandle) -> Result<(i32, i32), ShortcutError> {
     let input_state = app.state::<InputState>();
-    let guard = input_state.enigo.lock().map_err(|_| ShortcutError::PoisonError)?;
+    let guard = input_state
+        .enigo
+        .lock()
+        .map_err(|_| ShortcutError::PoisonError)?;
     let enigo = guard.as_ref().ok_or(ShortcutError::InputError)?;
 
     enigo.location().map_err(|_| ShortcutError::InputError)

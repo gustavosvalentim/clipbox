@@ -69,6 +69,36 @@ pub fn window_events_handler(window: &Window, event: &WindowEvent) {
     }
 }
 
+pub fn get_focused_window() -> Option<i32> {
+    #[cfg(target_os = "macos")]
+    {
+        use crate::window::macos::get_focused_window;
+
+        get_focused_window()
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        println!("Not implemented");
+        None
+    }
+}
+
+pub fn set_focused_window(pid: i32) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        use crate::window::macos::set_focused_window;
+
+        set_focused_window(pid)
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        println!("Not implemented");
+        false
+    }
+}
+
 #[cfg(target_os = "macos")]
 pub mod macos {
     use objc2_app_kit::{NSApplicationActivationOptions, NSRunningApplication, NSWorkspace};
@@ -81,10 +111,32 @@ pub mod macos {
         app.activateWithOptions(NSApplicationActivationOptions::empty())
     }
 
-    pub fn active_window_pid() -> Option<i32> {
+    pub fn get_focused_window() -> Option<i32> {
         let workspace = NSWorkspace::sharedWorkspace();
         let app = workspace.frontmostApplication();
 
         Some(app?.processIdentifier())
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub mod linux {
+    pub fn set_focused_window(_pid: i32) -> bool {
+        false
+    }
+
+    pub fn get_focused_window() -> Option<i32> {
+        None
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub mod windows {
+    pub fn set_focused_window(_pid: i32) -> bool {
+        false
+    }
+
+    pub fn get_focused_window() -> Option<i32> {
+        None
     }
 }

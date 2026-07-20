@@ -5,7 +5,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::clipboard::ClipboardStore;
 use crate::input::InputState;
-use crate::window::get_main_window;
+use crate::window::{get_focused_window, get_main_window, set_focused_window};
 
 #[derive(Debug)]
 pub enum PasteError {
@@ -30,12 +30,20 @@ impl std::fmt::Display for PasteError {
     }
 }
 
-pub fn paste_from_selection(app: &tauri::AppHandle, history: &ClipboardStore, paste_target: &WindowManager, input_state: &InputState, text: &str) -> Result<(), PasteError> {
+pub fn paste_from_selection(
+    app: &tauri::AppHandle,
+    history: &ClipboardStore,
+    paste_target: &PasteState,
+    input_state: &InputState,
+    text: &str,
+) -> Result<(), PasteError> {
     if !history.exists(text) {
         return Err(PasteError::ItemNotFound);
     }
 
-    app.clipboard().write_text(text).map_err(|_| PasteError::ClipboardError)?;
+    app.clipboard()
+        .write_text(text)
+        .map_err(|_| PasteError::ClipboardError)?;
 
     let _ = history.move_to_top(text);
 
@@ -43,12 +51,16 @@ pub fn paste_from_selection(app: &tauri::AppHandle, history: &ClipboardStore, pa
         window.hide().map_err(|_| PasteError::WindowError)?;
     }
 
-    paste_target.restore_focus().map_err(|_| PasteError::WindowError)?;
+    paste_target
+        .restore()
+        .map_err(|_| PasteError::WindowError)?;
 
-    let mut guard = input_state.enigo.lock().map_err(|_| PasteError::PoisonError)?;
-    let enigo = guard
-        .as_mut()
-        .ok_or(PasteError::PermissionError)?;
+    let mut guard = input_state
+        .enigo
+        .lock()
+        .map_err(|_| PasteError::PoisonError)?;
+
+    let enigo = guard.as_mut().ok_or(PasteError::PermissionError)?;
 
     simulate_paste_inputs(enigo)
 }
@@ -77,7 +89,7 @@ pub struct AppInfo {
     pub pid: Option<i32>,
 }
 
-pub struct WindowManager {
+pub struct PasteState {
     last_focused_window: Mutex<AppInfo>,
 }
 
@@ -98,46 +110,36 @@ impl std::fmt::Display for PasteStateError {
     }
 }
 
-impl WindowManager {
+impl PasteState {
     pub fn new() -> Self {
         Self {
             last_focused_window: Mutex::new(AppInfo { pid: None }),
         }
     }
 
-    pub fn load_focused_window(&self) {
-        #[cfg(target_os = "macos")]
-        {
-            use crate::window::macos::active_window_pid;
+    pub fn get_and_store(&self) -> Result<(), PasteStateError> {
+        let pid = get_focused_window();
+        let mut target = self
+            .last_focused_window
+            .lock()
+            .map_err(|_| PasteStateError::StatePoisonError)?;
 
-            if let Ok(mut target) = self.last_focused_window.lock() {
-                target.pid = active_window_pid();
-            }
-        }
+        target.pid = pid;
 
-        #[cfg(not(target_os = "macos"))]
-        {
-            println!("Not implemented");
-        }
+        Ok(())
     }
 
-    pub fn restore_focus(&self) -> Result<(), PasteStateError> {
-        #[cfg(target_os = "macos")]
-        {
-            use crate::window::macos::set_focused_window;
+    pub fn restore(&self) -> Result<(), PasteStateError> {
+        let target = self
+            .last_focused_window
+            .lock()
+            .map_err(|_| PasteStateError::StatePoisonError)?;
 
-            let target = self.last_focused_window.lock().map_err(|_| PasteStateError::StatePoisonError)?;
-            let pid = target.pid.ok_or(PasteStateError::WindowHandlerError)?;
+        let pid = target.pid.ok_or(PasteStateError::WindowHandlerError)?;
 
-            if set_focused_window(pid) {
-                Ok(())
-            } else {
-                Err(PasteStateError::StatePoisonError)
-            }
-        }
-
-        #[cfg(not(target_os = "macos"))]
-        {
+        if set_focused_window(pid) {
+            Ok(())
+        } else {
             Err(PasteStateError::PlatformUnsupported)
         }
     }

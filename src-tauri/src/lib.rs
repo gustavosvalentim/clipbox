@@ -9,7 +9,7 @@ mod window;
 use clipboard::{ClipboardEventsListener, ClipboardStore};
 use commands::{clear, close, delete_item, fetch_clipboard, paste, quit};
 use input::InputState;
-use paste::WindowManager;
+use paste::PasteState;
 use shortcuts::register_shortcuts;
 use window::{create_klipo_window, window_events_handler};
 
@@ -19,7 +19,7 @@ const WINDOW_HEIGHT: f64 = 350.0;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let clipboard_store = ClipboardStore::new();
-    let paste_target = WindowManager::new();
+    let paste_target = PasteState::new();
     let input_state = InputState::new();
 
     if input_state.enable().is_err() {
@@ -60,7 +60,8 @@ pub fn run() {
 
             register_shortcuts(&app_handle)?;
             tray::create(&app_handle)?;
-            create_klipo_window(&app_handle, window_settings).map_err(|_| tauri::Error::WindowNotFound)?;
+            create_klipo_window(&app_handle, window_settings)
+                .map_err(|_| tauri::Error::WindowNotFound)?;
 
             // TODO: implement shutdown
             let listener = ClipboardEventsListener::new(app_handle)?;

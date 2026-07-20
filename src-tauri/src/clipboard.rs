@@ -8,6 +8,8 @@ use clipboard_master::{CallbackResult, ClipboardHandler, Master};
 use tauri::{Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
+use crate::window::get_focused_window;
+
 const MAX_ITEMS: usize = 120;
 
 #[derive(Debug)]
@@ -66,7 +68,8 @@ impl ClipboardStore {
     }
 
     pub fn clear(&self) -> Result<(), ClipboardError> {
-        self.items.lock()
+        self.items
+            .lock()
             .map_err(|_| ClipboardError::PoisonError)?
             .clear();
 
@@ -95,8 +98,7 @@ impl ClipboardStore {
             return false;
         };
 
-        guard.iter()
-            .any(|item| item.hash == hash)
+        guard.iter().any(|item| item.hash == hash)
     }
 
     pub fn delete(&self, text: &str) -> Result<usize, ClipboardError> {
@@ -118,10 +120,9 @@ impl ClipboardStore {
     pub fn move_to_top(&self, text: &str) -> Result<(), ClipboardError> {
         let hash = self.hash(text);
 
-        let mut guard = self.items.lock()
-            .map_err(|_| ClipboardError::PoisonError)?;
+        let mut guard = self.items.lock().map_err(|_| ClipboardError::PoisonError)?;
 
-        let item_idx = guard 
+        let item_idx = guard
             .iter()
             .position(|item| item.hash == hash)
             .ok_or(ClipboardError::ItemNotFound)?;
@@ -170,15 +171,11 @@ impl ClipboardHandler for ClipboardEventsHandler {
         println!("Clipboard changed");
 
         let klipo_pid = std::process::id();
+        let focused_window_pid = get_focused_window();
 
-        #[cfg(target_os = "macos")]
-        {
-            use crate::window::macos::active_window_pid;
-
-            if let Some(active_window_pid) = active_window_pid() {
-                if active_window_pid as u32 == klipo_pid {
-                    return CallbackResult::Next;
-                }
+        if let Some(focused_window_pid) = focused_window_pid {
+            if focused_window_pid as u32 == klipo_pid {
+                return CallbackResult::Next;
             }
         }
 

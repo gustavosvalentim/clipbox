@@ -5,7 +5,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::clipboard::{ClipboardEventsEmitter, ClipboardItem, ClipboardStore};
 use crate::input::InputState;
-use crate::paste::{paste_from_selection, WindowManager};
+use crate::paste::{paste_from_selection, PasteState};
 use crate::window::get_main_window;
 
 #[tauri::command]
@@ -30,7 +30,7 @@ pub fn clear(app: AppHandle, history: State<'_, ClipboardStore>) {
 pub fn paste(
     app: AppHandle,
     history: State<'_, ClipboardStore>,
-    paste: State<'_, WindowManager>,
+    paste: State<'_, PasteState>,
     input: State<'_, InputState>,
     text: &str,
 ) {
@@ -52,7 +52,7 @@ pub fn quit(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn close(app: AppHandle, paste_target: State<'_, WindowManager>) {
+pub fn close(app: AppHandle, paste_target: State<'_, PasteState>) {
     let Some(window) = get_main_window(&app) else {
         println!("Failed to get main window");
         return;
@@ -62,7 +62,7 @@ pub fn close(app: AppHandle, paste_target: State<'_, WindowManager>) {
         println!("Failed to hide window: {e}");
     }
 
-    if let Err(e) = paste_target.restore_focus() {
+    if let Err(e) = paste_target.restore() {
         println!("Failed to restore focus: {e}");
     }
 }
