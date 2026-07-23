@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trash2 } from "react-feather";
 import { ListItem } from "./components/ListItem";
 import "./App.css";
@@ -72,6 +72,8 @@ function App() {
 	const [selectedItem, setSelectedItem] = useState<number | null>(null);
 	const [shortcuts, setShortcuts] = useState<ShortcutSettings | null>(null);
 
+  const historyRef = useRef<HTMLDivElement>(null);
+
 	const hide = useCallback(() => invoke("close"), []);
 
 	const fetchClipboardHistory = useCallback(async () => {
@@ -135,12 +137,19 @@ function App() {
 			switch (pressedShortcut) {
 				case shortcuts.moveSelectionUp:
 					event.preventDefault();
-					newSelectedItem =
-						selectedItem !== null ? selectedItem - 1 : clipboard.length;
+          
+          newSelectedItem = selectedItem !== null && selectedItem > 0 ?
+            selectedItem - 1 :
+            clipboard.length - 1;
+
 					break;
 				case shortcuts.moveSelectionDown:
 					event.preventDefault();
-					newSelectedItem = selectedItem !== null ? selectedItem + 1 : 0;
+
+          newSelectedItem = selectedItem !== null && selectedItem < clipboard.length - 1 ?
+            selectedItem + 1 :
+            0;
+
 					break;
 				case shortcuts.pasteSelectedItem: {
 					event.preventDefault();
@@ -163,9 +172,11 @@ function App() {
 					break;
 			}
 
-			if (newSelectedItem === null || !isValidItem(newSelectedItem)) {
-				newSelectedItem = 0;
-			}
+      if (newSelectedItem !== null && newSelectedItem !== selectedItem) {
+        historyRef.current?.children[newSelectedItem]?.scrollIntoView({
+          block: "nearest",
+        });
+      }
 
 			setSelectedItem(newSelectedItem);
 		},
@@ -233,7 +244,7 @@ function App() {
 
 				<MenuSeparator />
 
-				<div className="menu__history">
+				<div ref={historyRef} className="menu__history">
 					{clipboardMenuItems.map((item, idx) => (
 						<ListItem {...item} key={item.key} active={idx === selectedItem} />
 					))}
